@@ -103,8 +103,6 @@ jobs:
         commit-message: Increment version to ${{ env.NEXT_VERSION }}
         signoff: true
         delete-branch: true
-        labels: |
-          autocut
         title: '[AUTO] Increment version to ${{ env.NEXT_VERSION }}.'
         body: |
           I've noticed that a new tag ${{ env.TAG }} was pushed, and incremented the version from ${{ env.CURRENT_VERSION }} to ${{ env.NEXT_VERSION }}..
