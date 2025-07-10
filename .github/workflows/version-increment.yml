@@ -74,9 +74,9 @@ jobs:
         echo "Target branch: $TARGET_BRANCH"
 
     - name: Checkout target branch
-      run: |
-        TARGET_BRANCH="${{ steps.parse_tag.outputs.target_branch }}"
-        git checkout $TARGET_BRANCH || git checkout main
+      uses: actions/checkout@v4
+      with:
+        ref: "${{ steps.parse_tag.outputs.target_branch }}"
 
     - name: Set environment variables for PR
       run: |
