@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { i18n } from '@osd/i18n';
 import { ApplicationStart } from 'opensearch-dashboards/public';
 import {
@@ -67,7 +67,6 @@ export const DataSourceErrorMenu = ({ application }: DataSourceErrorMenuProps) =
         anchorPosition="downLeft"
         data-test-subj={'dataSourceErrorPopover'}
       >
-        {/* @ts-expect-error TS2741 TODO(ts-error): fixme */}
         <DataSourceDropDownHeader totalDataSourceCount={0} application={application} />
         <EuiPanel
           hasBorder={false}

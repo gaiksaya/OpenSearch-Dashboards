@@ -6,6 +6,7 @@
 import React from 'react';
 import { i18n } from '@osd/i18n';
 import { DataSourcePluginSetup } from 'src/plugins/data_source/public';
+import semver from 'semver';
 import {
   AppMountParameters,
   CoreSetup,
@@ -19,6 +20,7 @@ import { toMountPoint } from '../../../../src/plugins/opensearch_dashboards_reac
 import { DashboardDirectQuerySyncBanner } from './components/direct_query_data_sources_components/direct_query_sync/direct_query_sync_banner';
 import { parseUrlHash } from '../../opensearch_dashboards_utils/public';
 
+import * as pluginManifest from '../opensearch_dashboards.json';
 import { PLUGIN_NAME } from '../common';
 import { createDataSourceSelector } from './components/data_source_selector/create_data_source_selector';
 
@@ -36,6 +38,7 @@ import { createDataSourceMenu } from './components/data_source_menu/create_data_
 import { DataSourceMenuProps } from './components/data_source_menu';
 import {
   setApplication,
+  setWorkspaces,
   setHideLocalCluster,
   setUiSettings,
   setDataSourceSelection,
@@ -86,7 +89,9 @@ export interface DataSourceManagementPluginSetup {
   registerAuthenticationMethod: (authMethodValues: AuthenticationMethod) => void;
   ui: {
     DataSourceSelector: React.ComponentType<DataSourceSelectorProps> | null;
-    getDataSourceMenu: <T>() => React.ComponentType<DataSourceMenuProps<T>>;
+    getDataSourceMenu: <T>() => React.ComponentType<
+      Omit<DataSourceMenuProps<T>, 'uiSettings' | 'hideLocalCluster' | 'application' | 'workspaces'>
+    >;
   };
   dataSourceSelection: DataSourceSelectionService;
   getDefaultDataSourceId: typeof getDefaultDataSourceId;
@@ -118,6 +123,7 @@ export class DataSourceManagementPlugin
   private core: CoreStart | null = null;
   private currentAppId: string | undefined = undefined;
   private config: ConfigSchema;
+  private managementApp: any = null;
 
   constructor(initializerContext: { config: { get: () => ConfigSchema } }) {
     this.config = initializerContext.config.get();
@@ -145,7 +151,7 @@ export class DataSourceManagementPlugin
 
     this.featureFlagStatus = !!dataSource;
 
-    opensearchDashboardsSection.registerApp({
+    this.managementApp = opensearchDashboardsSection.registerApp({
       id: DSM_APP_ID,
       title: PLUGIN_NAME,
       order: 1,
@@ -197,6 +203,7 @@ export class DataSourceManagementPlugin
         id: DSM_APP_ID,
         category: DEFAULT_APP_CATEGORIES.manageData,
         order: 100,
+        euiIconType: 'indexManagementApp',
       },
     ]);
 
@@ -236,8 +243,12 @@ export class DataSourceManagementPlugin
       dataSourceSelection: this.dataSourceSelection,
       ui: {
         DataSourceSelector: createDataSourceSelector(uiSettings, dataSource!),
-        getDataSourceMenu: <T>(): React.ComponentType<DataSourceMenuProps<T>> =>
-          createDataSourceMenu<T>(),
+        getDataSourceMenu: <T>(): React.ComponentType<
+          Omit<
+            DataSourceMenuProps<T>,
+            'uiSettings' | 'hideLocalCluster' | 'application' | 'workspaces'
+          >
+        > => createDataSourceMenu<T>(),
       },
       getDefaultDataSourceId,
       getDefaultDataSourceId$,
@@ -248,7 +259,25 @@ export class DataSourceManagementPlugin
     this.started = true;
     this.core = core;
 
+    if (!this.featureFlagStatus && this.managementApp) {
+      core.http
+        .get<{ version: string }>('/internal/data-source-management/localClusterVersion')
+        .then(({ version }) => {
+          if (
+            version &&
+            pluginManifest.supportedOSDataSourceVersions &&
+            !semver.satisfies(version, pluginManifest.supportedOSDataSourceVersions)
+          ) {
+            this.managementApp!.disable();
+          }
+        })
+        // Fail-open: if version fetch fails, keep the management page enabled
+        // rather than blocking access when the version is unknown
+        .catch(() => {});
+    }
+
     setApplication(core.application);
+    setWorkspaces(core.workspaces);
     core.http.intercept({
       request: catalogRequestIntercept(),
     });

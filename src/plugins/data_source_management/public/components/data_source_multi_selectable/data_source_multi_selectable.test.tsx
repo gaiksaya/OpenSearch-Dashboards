@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SavedObjectsClientContract } from 'opensearch-dashboards/public';
+import { SavedObjectsClientContract, UiSettingScope } from 'opensearch-dashboards/public';
 import { notificationServiceMock } from '../../../../../core/public/mocks';
 import {
   getDataSourcesWithFieldsResponse,
   mockResponseForSavedObjectsCalls,
   mockManagementPlugin,
 } from '../../mocks';
-import { ShallowWrapper, mount, shallow } from 'enzyme';
-import { act } from 'react-dom/test-utils';
+import { ShallowWrapper, mount, shallow, ReactWrapper } from 'enzyme';
+import { act } from 'react';
 import { DataSourceMultiSelectable } from './data_source_multi_selectable';
 import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react';
+import { render, fireEvent, screen, waitFor } from '@testing-library/react';
 import { DataSourceSelectionService } from '../../service/data_source_selection_service';
 import * as utils from '../utils';
 
@@ -39,7 +39,7 @@ describe('DataSourceMultiSelectable', () => {
   });
 
   it('should render normally with local cluster not hidden', async () => {
-    let wrapper;
+    let wrapper!: ReactWrapper;
     await act(async () => {
       wrapper = mount(
         <DataSourceMultiSelectable
@@ -48,10 +48,11 @@ describe('DataSourceMultiSelectable', () => {
           onSelectedDataSources={jest.fn()}
           hideLocalCluster={false}
           fullWidth={false}
+          scope={UiSettingScope.GLOBAL}
         />
       );
     });
-    // @ts-expect-error TS2532 TODO(ts-error): fixme
+
     wrapper.update();
 
     expect(wrapper).toMatchSnapshot();
@@ -64,7 +65,7 @@ describe('DataSourceMultiSelectable', () => {
   });
 
   it('should render normally with local cluster hidden', async () => {
-    let wrapper;
+    let wrapper!: ReactWrapper;
     await act(async () => {
       wrapper = mount(
         <DataSourceMultiSelectable
@@ -73,10 +74,11 @@ describe('DataSourceMultiSelectable', () => {
           onSelectedDataSources={jest.fn()}
           hideLocalCluster={true}
           fullWidth={false}
+          scope={UiSettingScope.GLOBAL}
         />
       );
     });
-    // @ts-expect-error TS2532 TODO(ts-error): fixme
+
     wrapper.update();
     expect(wrapper).toMatchSnapshot();
     expect(client.find).toBeCalledWith({
@@ -103,6 +105,7 @@ describe('DataSourceMultiSelectable', () => {
         onSelectedDataSources={jest.fn()}
         hideLocalCluster={true}
         fullWidth={false}
+        scope={UiSettingScope.GLOBAL}
       />
     );
     await nextTick();
@@ -123,10 +126,16 @@ describe('DataSourceMultiSelectable', () => {
         onSelectedDataSources={callbackMock}
         hideLocalCluster={true}
         fullWidth={false}
+        scope={UiSettingScope.GLOBAL}
       />
     );
-    const button = await container.findByTestId('dataSourceFilterGroupButton');
-    button.click();
+    await waitFor(async () => {
+      const button = await container.findByTestId('dataSourceFilterGroupButton');
+      fireEvent.click(button);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Deselect all')).toBeInTheDocument();
+    });
     fireEvent.click(screen.getByText('Deselect all'));
 
     expect(callbackMock).toBeCalledWith([]);
@@ -138,7 +147,7 @@ describe('DataSourceMultiSelectable', () => {
       .mockResolvedValue('test1');
 
     const onSelectedDataSources = jest.fn();
-    let wrapper;
+    let wrapper!: ReactWrapper;
     await act(async () => {
       wrapper = mount(
         <DataSourceMultiSelectable
@@ -148,23 +157,26 @@ describe('DataSourceMultiSelectable', () => {
           hideLocalCluster={true}
           fullWidth={false}
           uiSettings={uiSettings}
+          scope={UiSettingScope.GLOBAL}
         />
       );
     });
-    // @ts-expect-error TS2532 TODO(ts-error): fixme
     wrapper.update();
 
-    expect(getDefaultDataSourceIdMock).toHaveBeenCalledWith(uiSettings);
+    expect(getDefaultDataSourceIdMock).toHaveBeenCalledWith(uiSettings, UiSettingScope.GLOBAL);
 
-    // @ts-expect-error TS2532 TODO(ts-error): fixme
     const instance = wrapper.instance();
+    // @ts-expect-error TS2532 TODO(ts-error): fixme
     expect(instance.state.defaultDataSource).toEqual('test1');
+    // @ts-expect-error TS2532 TODO(ts-error): fixme
     expect(instance.state.selectedOptions).toHaveLength(3);
     getDefaultDataSourceIdMock.mockRestore();
   });
 
   it('should return correct state when ui Settings provided and hide cluster is false', async () => {
-    spyOn(uiSettings, 'get').and.returnValue('test1');
+    const getDefaultDataSourceIdMock = jest
+      .spyOn(utils, 'getDefaultDataSourceId')
+      .mockResolvedValue('test1');
     component = shallow(
       <DataSourceMultiSelectable
         savedObjectsClient={client}
@@ -173,44 +185,55 @@ describe('DataSourceMultiSelectable', () => {
         hideLocalCluster={false}
         fullWidth={false}
         uiSettings={uiSettings}
+        scope={UiSettingScope.GLOBAL}
       />
     );
     await component.instance().componentDidMount!();
-    expect(uiSettings.get).toBeCalledWith('defaultDataSource', null);
+    expect(getDefaultDataSourceIdMock).toHaveBeenCalledWith(uiSettings, UiSettingScope.GLOBAL);
     expect(component.state('defaultDataSource')).toEqual('test1');
     expect(component.state('selectedOptions')).toHaveLength(4);
   });
 
   it('should handle no available data source error when selected option is empty and hide localcluster', async () => {
     mockResponseForSavedObjectsCalls(client, 'find', {});
-    const wrapper = mount(
-      <DataSourceMultiSelectable
-        savedObjectsClient={client}
-        notifications={toasts}
-        onSelectedDataSources={jest.fn()}
-        hideLocalCluster={true}
-        fullWidth={false}
-        uiSettings={uiSettings}
-      />
-    );
-    await wrapper.instance().componentDidMount!();
+    let wrapper: any;
+    await act(async () => {
+      wrapper = mount(
+        <DataSourceMultiSelectable
+          savedObjectsClient={client}
+          notifications={toasts}
+          onSelectedDataSources={jest.fn()}
+          hideLocalCluster={true}
+          fullWidth={false}
+          uiSettings={uiSettings}
+          scope={UiSettingScope.GLOBAL}
+        />
+      );
+      await nextTick();
+    });
+    wrapper.update();
     expect(wrapper.state('selectedOptions')).toHaveLength(0);
     expect(wrapper.state('showEmptyState')).toBe(true);
   });
 
   it('should not handle no available data source error when selected option is empty and not hide localcluster', async () => {
     mockResponseForSavedObjectsCalls(client, 'find', {});
-    const wrapper = mount(
-      <DataSourceMultiSelectable
-        savedObjectsClient={client}
-        notifications={toasts}
-        onSelectedDataSources={jest.fn()}
-        hideLocalCluster={false}
-        fullWidth={false}
-        uiSettings={uiSettings}
-      />
-    );
-    await wrapper.instance().componentDidMount!();
+    let wrapper: any;
+    await act(async () => {
+      wrapper = mount(
+        <DataSourceMultiSelectable
+          savedObjectsClient={client}
+          notifications={toasts}
+          onSelectedDataSources={jest.fn()}
+          hideLocalCluster={false}
+          fullWidth={false}
+          uiSettings={uiSettings}
+          scope={UiSettingScope.GLOBAL}
+        />
+      );
+      await nextTick();
+    });
+    wrapper.update();
     expect(wrapper.state('selectedOptions')).toHaveLength(1);
     expect(wrapper.state('showEmptyState')).toBe(false);
   });
@@ -234,17 +257,25 @@ describe('DataSourceMultiSelectable', () => {
         onSelectedDataSources={jest.fn()}
         hideLocalCluster={true}
         fullWidth={false}
+        scope={UiSettingScope.GLOBAL}
       />
     );
 
-    await component.instance().componentDidMount!();
-    expect(dataSourceSelectionMock.selectDataSource).toHaveBeenCalledWith(
-      componentId,
-      selectedOptions
-    );
+    // Wait for component to mount and fetch data
+    await waitFor(() => {
+      expect(dataSourceSelectionMock.selectDataSource).toHaveBeenCalledWith(
+        componentId,
+        selectedOptions
+      );
+    });
 
-    const button = await container.findByTestId('dataSourceFilterGroupButton');
-    button.click();
+    await waitFor(async () => {
+      const button = await container.findByTestId('dataSourceFilterGroupButton');
+      fireEvent.click(button);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Deselect all')).toBeInTheDocument();
+    });
     fireEvent.click(screen.getByText('Deselect all'));
 
     expect(dataSourceSelectionMock.selectDataSource).toHaveBeenCalledWith(componentId, []);

@@ -44,12 +44,14 @@ const createSetupContractMock = () => {
     globalSearch: {
       registerSearchCommand: jest.fn(),
     },
+    getIsIconSideNavEnabled: jest.fn().mockReturnValue(false),
   };
 };
 
 const createStartContractMock = () => {
   const startContract: DeeplyMockedKeys<InternalChromeStart> = {
     getHeaderComponent: jest.fn(),
+    useUpdatedHeader: false,
     navLinks: {
       getNavLinks$: jest.fn(),
       has: jest.fn(),
@@ -76,11 +78,13 @@ const createStartContractMock = () => {
       registerRight: jest.fn(),
       registerLeftBottom: jest.fn(),
       registerPrimaryHeaderRight: jest.fn(),
+      registerIconSideNavFooter: jest.fn(),
       getLeft$: jest.fn(),
       getCenter$: jest.fn(),
       getRight$: jest.fn(),
       getLeftBottom$: jest.fn(),
       getPrimaryHeaderRight$: jest.fn(),
+      getIconSideNavFooter$: jest.fn(),
     },
     navGroup: {
       getNavGroupsMap$: jest.fn(() => new BehaviorSubject({})),
@@ -91,6 +95,8 @@ const createStartContractMock = () => {
     globalSearch: {
       getAllSearchCommands: jest.fn(() => []),
       unregisterSearchCommand: jest.fn(),
+      getAllSearchCommands$: jest.fn(() => new BehaviorSubject([])),
+      registerSearchCommand: jest.fn(),
     },
     setAppTitle: jest.fn(),
     setIsVisible: jest.fn(),
@@ -112,6 +118,9 @@ const createStartContractMock = () => {
     getIsNavDrawerLocked$: jest.fn(),
     getCustomNavLink$: jest.fn(),
     setCustomNavLink: jest.fn(),
+    getGlobalBanner$: jest.fn(),
+    setGlobalBanner: jest.fn(),
+    getIsIconSideNavEnabled: jest.fn(),
   };
   startContract.navLinks.getAll.mockReturnValue([]);
   startContract.getIsVisible$.mockReturnValue(new BehaviorSubject(false));
@@ -122,6 +131,8 @@ const createStartContractMock = () => {
   startContract.getCustomNavLink$.mockReturnValue(new BehaviorSubject(undefined));
   startContract.getHelpExtension$.mockReturnValue(new BehaviorSubject(undefined));
   startContract.getIsNavDrawerLocked$.mockReturnValue(new BehaviorSubject(false));
+  startContract.getGlobalBanner$.mockReturnValue(new BehaviorSubject(undefined));
+  startContract.getIsIconSideNavEnabled.mockReturnValue(false);
   return startContract;
 };
 

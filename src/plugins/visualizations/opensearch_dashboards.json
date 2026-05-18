@@ -4,6 +4,12 @@
   "server": true,
   "ui": true,
   "requiredPlugins": ["data", "expressions", "uiActions", "embeddable", "inspector", "dashboard"],
-  "optionalPlugins": ["usageCollection"],
-  "requiredBundles": ["opensearchDashboardsUtils", "discover", "savedObjects", "visAugmenter"]
+  "optionalPlugins": ["usageCollection", "contextProvider"],
+  "requiredBundles": [
+    "opensearchDashboardsUtils",
+    "discover",
+    "savedObjects",
+    "visAugmenter",
+    "opensearchDashboardsReact"
+  ]
 }

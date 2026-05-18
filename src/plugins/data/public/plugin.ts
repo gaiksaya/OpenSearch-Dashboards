@@ -30,7 +30,9 @@
 
 import './index.scss';
 
+import { registerPPLValidationProvider } from '@osd/monaco';
 import { PluginInitializerContext, CoreSetup, CoreStart, Plugin } from 'src/core/public';
+import { Subscription } from 'rxjs';
 import { ConfigSchema } from '../config';
 import { createStartServicesGetter } from '../../opensearch_dashboards_utils/public';
 import {
@@ -45,6 +47,13 @@ import { SearchService } from './search/search_service';
 import { UiService } from './ui/ui_service';
 import { FieldFormatsService } from './field_formats';
 import { QueryService } from './query';
+import {
+  DataViewsService,
+  onRedirectNoDataView,
+  onUnsupportedTimePattern as onUnsupportedDataViewTimePattern,
+  DataViewsApiClient,
+  UiSettingsPublicToCommon as DataViewsUiSettingsPublicToCommon,
+} from './data_views';
 import {
   IndexPatternsService,
   onRedirectNoIndexPattern,
@@ -63,6 +72,8 @@ import {
   setSearchService,
   setUiService,
   setUiSettings,
+  setDataViews,
+  setSavedObjects,
 } from './services';
 import { opensearchaggs } from './search/expressions';
 import {
@@ -93,11 +104,17 @@ import { DefaultDslDataSource } from './data_sources/default_datasource';
 import { DEFAULT_DATA_SOURCE_TYPE } from './data_sources/constants';
 import { getSuggestions as getSQLSuggestions } from './antlr/opensearch_sql/code_completion';
 import { getSuggestions as getDQLSuggestions } from './antlr/dql/code_completion';
+import { getSuggestions as getPromptSuggestions } from './antlr/prompt/code_completion';
 import {
   getDefaultSuggestions as getPPLSuggestions,
   getSimplifiedPPLSuggestions,
 } from './antlr/opensearch_ppl/code_completion';
+import { createPplGrammarWarmupHandler } from './antlr/opensearch_ppl/ppl_grammar_warmup';
+import { validateRuntimePPLQuery } from './antlr/opensearch_ppl/runtime_validation';
+import { getSuggestions as getPromQLSuggestions } from './antlr/promql/code_completion';
+import { promqlTriggerCharacters } from './antlr/promql/constants';
 import { createStorage, DataStorage, UI_SETTINGS } from '../common';
+import { ResourceClientFactory } from './resources';
 
 declare module '../../ui_actions/public' {
   export interface ActionContextMapping {
@@ -123,6 +140,9 @@ export class DataPublicPlugin
   private readonly storage: DataStorage;
   private readonly sessionStorage: DataStorage;
   private readonly config: ConfigSchema;
+  private resourceClientFactory!: ResourceClientFactory;
+  private pplGrammarWarmupSubscription?: Subscription;
+  private unregisterPplValidationProvider?: () => void;
 
   constructor(initializerContext: PluginInitializerContext<ConfigSchema>) {
     this.searchService = new SearchService(initializerContext);
@@ -185,17 +205,26 @@ export class DataPublicPlugin
     autoComplete.addQuerySuggestionProvider('kuery', getDQLSuggestions);
     autoComplete.addQuerySuggestionProvider('PPL', getPPLSuggestions);
     autoComplete.addQuerySuggestionProvider('PPL_Simplified', getSimplifiedPPLSuggestions); // Support implicit PPL queries that don't necessarily start with source = datasetName
+    autoComplete.addQuerySuggestionProvider('AI', getPromptSuggestions);
+    autoComplete.addQuerySuggestionProvider(
+      'PROMQL',
+      getPromQLSuggestions,
+      promqlTriggerCharacters
+    );
 
     const useNewSavedQueriesUI =
       core.uiSettings.get(UI_SETTINGS.QUERY_ENHANCEMENTS_ENABLED) &&
       this.config.savedQueriesNewUI.enabled;
     setUseNewSavedQueriesUI(useNewSavedQueriesUI);
 
+    this.resourceClientFactory = new ResourceClientFactory(core.http);
+
     return {
       autocomplete: autoComplete,
       search: searchService,
       fieldFormats: this.fieldFormatsService.setup(core),
       query: queryService,
+      resourceClientFactory: this.resourceClientFactory,
       __enhance: (enhancements: DataPublicPluginEnhancements) => {
         if (enhancements.search) searchService.__enhance(enhancements.search);
         if (enhancements.editor)
@@ -204,7 +233,10 @@ export class DataPublicPlugin
     };
   }
 
-  public start(core: CoreStart, { uiActions }: DataStartDependencies): DataPublicPluginStart {
+  public start(
+    core: CoreStart,
+    { uiActions, contextProvider }: DataStartDependencies
+  ): DataPublicPluginStart {
     const {
       uiSettings,
       http,
@@ -218,6 +250,7 @@ export class DataPublicPlugin
     setOverlays(overlays);
     setUiSettings(uiSettings);
     setApplication(application);
+    setSavedObjects(savedObjects);
 
     const fieldFormats = this.fieldFormatsService.start();
     setFieldFormats(fieldFormats);
@@ -249,6 +282,34 @@ export class DataPublicPlugin
     });
     setIndexPatterns(indexPatterns);
 
+    const dataViews = new DataViewsService({
+      patterns: indexPatterns,
+      uiSettings: new DataViewsUiSettingsPublicToCommon(uiSettings),
+      savedObjectsClient: new SavedObjectsClientPublicToCommon(savedObjects.client),
+      apiClient: new DataViewsApiClient(http),
+      fieldFormats,
+      onNotification: (toastInputFields) => {
+        notifications.toasts.add(toastInputFields);
+      },
+      onError: notifications.toasts.addError.bind(notifications.toasts),
+      onRedirectNoDataView: onRedirectNoDataView(
+        application.capabilities,
+        application.navigateToApp,
+        overlays
+      ),
+      onUnsupportedTimePattern: onUnsupportedDataViewTimePattern(
+        notifications.toasts,
+        application.navigateToApp
+      ),
+      // If workspace is enabled, only workspace owner/OSD admin can update ui setting.
+      ...(application.capabilities.workspaces.enabled && {
+        canUpdateUiSetting:
+          workspaces?.currentWorkspace$.getValue()?.owner ||
+          application.capabilities?.dashboards?.isDashboardAdmin !== false,
+      }),
+    });
+    setDataViews(dataViews);
+
     const query = this.queryService.start({
       storage: this.storage,
       savedObjectsClient: savedObjects.client,
@@ -258,6 +319,27 @@ export class DataPublicPlugin
       notifications,
     });
     setQueryService(query);
+
+    // Subscribe to dataset changes to pre-fetch PPL grammar.
+    // The handler fires when the query language is PPL and the dataset changes.
+    // The initial fire with the current query covers the page-load case.
+    // the subscription covers subsequent dataset switches.
+    // Gated by query:enhancements:runtimePplGrammar setting (default: true).
+    const isRuntimePplGrammarEnabled =
+      uiSettings.get(UI_SETTINGS.QUERY_ENHANCEMENTS_RUNTIME_PPL_GRAMMAR) !== false;
+
+    if (isRuntimePplGrammarEnabled) {
+      const maybeWarmUpPplGrammar = createPplGrammarWarmupHandler(
+        http,
+        uiSettings,
+        savedObjects.client
+      );
+      maybeWarmUpPplGrammar(query.queryString.getQuery());
+      this.pplGrammarWarmupSubscription = query.queryString
+        .getUpdates$()
+        .subscribe(maybeWarmUpPplGrammar);
+      this.unregisterPplValidationProvider = registerPPLValidationProvider(validateRuntimePPLQuery);
+    }
 
     const search = this.searchService.start(core, { fieldFormats, indexPatterns });
     setSearchService(search);
@@ -285,6 +367,7 @@ export class DataPublicPlugin
       },
       autocomplete: this.autocomplete.start(),
       fieldFormats,
+      dataViews,
       indexPatterns,
       query,
       search,
@@ -292,11 +375,16 @@ export class DataPublicPlugin
         dataSourceService,
         dataSourceFactory,
       },
+      resourceClientFactory: this.resourceClientFactory,
     };
 
     registerDefaultDataSource(dataServices);
 
-    const uiService = this.uiService.start(core, { dataServices, storage: this.storage });
+    const uiService = this.uiService.start(core, {
+      dataServices,
+      storage: this.storage,
+      contextProvider,
+    });
     setUiService(uiService);
 
     return {
@@ -306,6 +394,10 @@ export class DataPublicPlugin
   }
 
   public stop() {
+    this.pplGrammarWarmupSubscription?.unsubscribe();
+    this.pplGrammarWarmupSubscription = undefined;
+    this.unregisterPplValidationProvider?.();
+    this.unregisterPplValidationProvider = undefined;
     this.autocomplete.clearProviders();
     this.queryService.stop();
     this.searchService.stop();

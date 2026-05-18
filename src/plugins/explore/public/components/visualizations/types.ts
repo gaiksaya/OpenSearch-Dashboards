@@ -3,38 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Positions } from './utils/collections';
+import { ChartStyles } from '../visualizations/utils/use_visualization_types';
+import { ChartConfig } from './visualization_builder.types';
 
-export interface ChartTypeMapping {
+export enum Positions {
+  RIGHT = 'right',
+  LEFT = 'left',
+  TOP = 'top',
+  BOTTOM = 'bottom',
+}
+export interface ChartMetadata {
   type: string;
-  priority: number; // Higher number means higher priority for rule matching
   name: string;
+  icon: string;
 }
 
-export interface VisualizationRule {
-  id: string; // Unique rule identifier
-  name: string;
-  description?: string;
-  matches: (
-    numericalColumns: VisColumn[],
-    categoricalColumns: VisColumn[],
-    dateColumns: VisColumn[]
-  ) => boolean;
-  chartTypes: ChartTypeMapping[]; // Each rule can map to multiple chart types with priorities
-  toExpression?: (
-    transformedData: Array<Record<string, any>>,
-    numericalColumns: VisColumn[],
-    categoricalColumns: VisColumn[],
-    dateColumns: VisColumn[],
-    styleOptions: any,
-    chartType?: string
-  ) => any;
-}
+export type AxisColumnMappings = Partial<Record<AxisRole, VisColumn[]>>;
+export type AxisFieldNameMappings = Partial<Record<string, string | string[]>>;
+
 export interface VisColumn {
   id: number;
   name: string;
   schema: VisFieldType;
   column: string;
+  validValuesCount: number;
+  uniqueValuesCount: number;
 }
 
 export enum VisFieldType {
@@ -44,25 +37,42 @@ export enum VisFieldType {
   Unknown = 'unknown',
 }
 
-export enum ThresholdLineStyle {
-  Full = 'full',
+export enum ThresholdMode {
+  Solid = 'solid',
   Dashed = 'dashed',
   DotDashed = 'dot-dashed',
+  Off = 'off',
 }
 
-// Styling: Threshold line configuration
 export interface ThresholdLine {
   color: string;
   show: boolean;
-  style: ThresholdLineStyle;
+  style: ThresholdMode;
   value: number;
   width: number;
 }
 
+export interface ThresholdLine {
+  color: string;
+  show: boolean;
+  style: ThresholdMode;
+  value: number;
+  width: number;
+  name?: string;
+  id?: string; // Unique identifier for each threshold
+}
+
+// Array of threshold lines
+export type ThresholdLines = ThresholdLine[];
+
+export interface TooltipOptions {
+  mode: 'all' | 'hidden';
+}
+
 // Styling: Grid configuration
 export interface GridOptions {
-  categoryLines: boolean;
-  valueLines: boolean;
+  xLines: boolean;
+  yLines: boolean;
 }
 
 // Styling: Axis label configuration
@@ -70,6 +80,7 @@ export interface AxisLabels {
   show: boolean;
   filter: boolean;
   rotate: number;
+  // TODO: make `truncate` optional
   truncate: number;
 }
 
@@ -86,6 +97,7 @@ export interface CategoryAxis {
   show: boolean;
   labels: AxisLabels;
   title: AxisTitle;
+  grid: Grid;
 }
 
 // Styling: Value axis configuration
@@ -97,4 +109,190 @@ export interface ValueAxis {
   show: boolean;
   labels: AxisLabels;
   title: AxisTitle;
+  grid: Grid;
+}
+
+export enum AxisRole {
+  X = 'x',
+  Y = 'y',
+  COLOR = 'color',
+  FACET = 'facet',
+  SIZE = 'size',
+  Y_SECOND = 'y2',
+  Value = 'value',
+  Time = 'time',
+}
+
+// for heatmap the axes can serve as value axis or category axis in 2 scenarios
+
+export interface Grid {
+  showLines: boolean;
+}
+
+export interface StandardAxes {
+  position: Positions;
+  show: boolean;
+  labels: AxisLabels;
+  title: AxisTitle;
+  axisRole: AxisRole;
+  grid: Grid;
+}
+
+export enum ScaleType {
+  LINEAR = 'linear',
+  LOG = 'log',
+  SQRT = 'sqrt',
+}
+
+export enum PointShape {
+  CIRCLE = 'circle',
+  SQUARE = 'square',
+  CROSS = 'cross',
+  DIAMOND = 'diamond',
+}
+
+export enum ColorSchemas {
+  BLUES = 'blues',
+  GREENS = 'greens',
+  GREYS = 'greys',
+  REDS = 'reds',
+  YELLOWORANGE = 'yelloworangered',
+  GREENBLUE = 'greenblue',
+}
+
+export interface RangeValue {
+  min?: number;
+  max?: number;
+}
+export interface Threshold {
+  value: number;
+  color: string;
+}
+
+export enum AggregationType {
+  SUM = 'sum',
+  MEAN = 'mean',
+  MAX = 'max',
+  MIN = 'min',
+  COUNT = 'count',
+  NONE = 'none',
+}
+
+export interface BucketOptions {
+  aggregationType?: AggregationType;
+  // exclusive for time-series histogram
+  bucketTimeUnit?: TimeUnit;
+
+  // exclusive for numerical histogram
+  bucketSize?: number;
+  bucketCount?: number;
+}
+
+export enum TimeUnit {
+  AUTO = 'auto',
+  YEAR = 'year',
+  MONTH = 'yearmonth',
+  DATE = 'yearmonthdate',
+  HOUR = 'yearmonthdatehours',
+  MINUTE = 'yearmonthdatehoursminutes',
+  SECOND = 'yearmonthdatehoursminutesseconds',
+}
+
+export interface AxisConfig {
+  grid: boolean;
+  gridColor?: string;
+  gridOpacity?: number;
+  labelSeparation?: number;
+  orient?: Positions;
+  title?: string | null;
+  labels?: boolean;
+  labelAngle?: number;
+  labelLimit?: number;
+  labelOverlap?: string;
+  labelFlush?: boolean;
+  ticks?: boolean;
+  domain?: boolean;
+  format?: {
+    hours?: string;
+    minutes?: string;
+    seconds?: string;
+    milliseconds?: string;
+  };
+}
+export interface ThresholdOptions {
+  thresholds?: Threshold[];
+  baseColor?: string;
+  thresholdStyle?: ThresholdMode;
+}
+
+export type PercentageColor = 'standard' | 'inverted';
+
+export enum FilterOperator {
+  Contains = 'contains',
+  Equals = 'equals',
+  Equal = '=',
+  NotEqual = '!=',
+  GreaterThan = '>',
+  GreaterThanOrEqual = '>=',
+  LessThan = '<',
+  LessThanOrEqual = '<=',
+}
+
+export type ColorMode = 'auto' | 'colored_text' | 'colored_background';
+
+export type CellAlignment = 'auto' | 'left' | 'center' | 'right';
+
+export interface UnitDisplay {
+  label: string | number;
+  segments?: Array<{ type: 'unit' | 'value'; value: number | string }>;
+}
+export interface UnitItem {
+  id: string;
+  name: string;
+  symbol?: string;
+  display?: (value: number, symbol?: string) => UnitDisplay;
+  fontScale?: number;
+}
+
+export interface Unit {
+  name: string;
+  units: UnitItem[];
+}
+
+export interface RenderChartConfig extends ChartConfig {
+  styles: ChartStyles;
+}
+export interface ValueMapping {
+  id?: string;
+  type: 'range' | 'value';
+  value?: string;
+  range?: RangeValue;
+  displayText?: string;
+  color?: string;
+}
+
+export interface ValueMappingOptions {
+  valueMappings?: ValueMapping[];
+}
+
+// state timeline
+export enum DisableMode {
+  Never = 'never',
+  Threshold = 'threshold',
+}
+
+export interface DisconnectValuesOption {
+  disableMode: DisableMode;
+  threshold: string;
+}
+
+export interface ConnectNullValuesOption {
+  connectMode: DisableMode;
+  threshold: string;
+}
+
+export interface RendererSpecConfig {
+  spec?: echarts.EChartsOption;
+  name?: string;
+  data: Array<Record<string, any>>;
 }

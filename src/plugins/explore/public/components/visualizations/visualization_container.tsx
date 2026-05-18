@@ -3,162 +3,103 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
-import { DiscoverViewServices } from '../../application/legacy/discover/build_services';
-import { useOpenSearchDashboards } from '../../../../opensearch_dashboards_react/public';
-import { useDiscoverContext } from '../../application/legacy/discover/application/view_components/context';
-
-import { SearchData } from '../../application/legacy/discover/application/view_components/utils';
-import { IExpressionLoaderParams } from '../../../../expressions/public';
-import { LineChartStyleControls } from './line/line_vis_config';
-import { Visualization } from './visualization';
-import {
-  getVisualizationType,
-  VisualizationTypeResult,
-  useVisualizationRegistry,
-} from './utils/use_visualization_types';
+import { EuiPanel } from '@elastic/eui';
+import React, { useCallback, useEffect } from 'react';
+import moment from 'moment';
+import { useDispatch } from 'react-redux';
 
 import './visualization_container.scss';
-import { VisColumn } from './types';
-import { toExpression } from './utils/to_expression';
+import { useTabResults } from '../../application/utils/hooks/use_tab_results';
+import { useSearchContext } from '../query_panel/utils/use_search_context';
+import { getVisualizationBuilder } from './visualization_builder';
+import { TimeRange } from '../../../../data/common';
+import { useOpenSearchDashboards } from '../../../../opensearch_dashboards_react/public';
+import { ExploreServices } from '../../types';
+import {
+  clearQueryStatusMap,
+  clearResults,
+  setDateRange,
+} from '../../application/utils/state_management/slices';
+import { executeQueries } from '../../application/utils/state_management/actions/query_actions';
+import { AxisFieldNameMappings } from './types';
 
-export const VisualizationContainer = ({ rows, fieldSchema }: SearchData) => {
-  const { services } = useOpenSearchDashboards<DiscoverViewServices>();
-  const {
-    data: {
-      query: { filterManager, queryString, timefilter },
-    },
-    expressions: { ReactExpressionRenderer },
-  } = services;
-  const { indexPattern } = useDiscoverContext();
+export interface UpdateVisualizationProps {
+  mappings: AxisFieldNameMappings;
+}
+// TODO: add back notifications
+// const VISUALIZATION_TOAST_MSG = {
+//   useRule: i18n.translate('explore.visualize.toast.useRule', {
+//     defaultMessage: 'Cannot apply previous configured visualization, use rule matched',
+//   }),
+//   reset: i18n.translate('explore.visualize.toast.reset', {
+//     defaultMessage: 'Cannot apply previous configured visualization, reset',
+//   }),
+//   metricReset: i18n.translate('explore.visualize.toast.metricReset', {
+//     defaultMessage: 'Cannot apply metric type visualization, reset',
+//   }),
+//   switchReset: i18n.translate('explore.visualize.toast.switchReset', {
+//     defaultMessage: 'Cannot apply configured visualization to the current chart type, reset',
+//   }),
+// };
 
-  const [visualizationData, setVisualizationData] = useState<VisualizationTypeResult | undefined>(
-    undefined
-  );
+export const VisualizationContainer = React.memo(() => {
+  const { services } = useOpenSearchDashboards<ExploreServices>();
+  const { results } = useTabResults();
+  const searchContext = useSearchContext();
+  const dispatch = useDispatch();
 
-  const [expression, setExpression] = useState<string>();
-  const [styleOptions, setStyleOptions] = useState<LineChartStyleControls | undefined>(undefined);
-  const [searchContext, setSearchContext] = useState<IExpressionLoaderParams['searchContext']>({
-    query: queryString.getQuery(),
-    filters: filterManager.getFilters(),
-    timeRange: timefilter.timefilter.getTime(),
-  });
+  const visualizationBuilder = getVisualizationBuilder();
 
-  // Hook to get the visualization type based on the rows and field schema
-  // This will be called every time the rows or fieldSchema changes
   useEffect(() => {
-    if (fieldSchema) {
-      const result = getVisualizationType(rows, fieldSchema);
-      if (result) {
-        setVisualizationData({ ...result });
-
-        // TODO: everytime the fields change, do we reset the chart type and its style options? P1: we will implement chart type selection persistence
-        setStyleOptions(result.visualizationType?.ui.style.defaults);
-      }
+    if (results) {
+      const rows = results.hits?.hits || [];
+      const fieldSchema = results.fieldSchema || [];
+      visualizationBuilder.handleData(rows, fieldSchema);
     }
-  }, [fieldSchema, rows]);
+  }, [visualizationBuilder, results]);
 
-  // Get the visualization registry
-  const visualizationRegistry = useVisualizationRegistry();
-
-  // Hook to generate the expression based on the visualization type and data
   useEffect(() => {
-    async function loadExpression() {
-      if (!rows || !indexPattern || !visualizationData || !visualizationData.ruleId) {
-        return;
-      }
-
-      // Get the selected chart type
-      const selectedChartType = visualizationData.visualizationType?.type || 'line';
-
-      // Get the selected rule id
-      const rule = visualizationRegistry.getRules().find((r) => r.id === visualizationData.ruleId);
-
-      if (!rule || !rule.toExpression) {
-        return;
-      }
-
-      // Create a function that call the specific rule's toExpression method
-      const ruleBasedToExpressionFn = (
-        transformedData: Array<Record<string, any>>,
-        numericalColumns: VisColumn[],
-        categoricalColumns: VisColumn[],
-        dateColumns: VisColumn[],
-        styleOpts: any
-      ) => {
-        return rule.toExpression!(
-          transformedData,
-          numericalColumns,
-          categoricalColumns,
-          dateColumns,
-          styleOpts,
-          selectedChartType
-        );
-      };
-
-      // Create a complete expression using the toExpression function including the OpenSearch Dashboards context and the Vega spec
-      const exp = await toExpression(
-        searchContext,
-        indexPattern,
-        ruleBasedToExpressionFn,
-        visualizationData.transformedData,
-        visualizationData.numericalColumns,
-        visualizationData.categoricalColumns,
-        visualizationData.dateColumns,
-        styleOptions
-      );
-      setExpression(exp);
-    }
-
-    loadExpression();
-  }, [
-    searchContext,
-    rows,
-    indexPattern,
-    services,
-    styleOptions,
-    visualizationData,
-    visualizationRegistry,
-  ]);
-
-  // Hook to update the search context whenever the query state changes
-  // This will ensure that the visualization is always up-to-date with the latest query and filters
-  // Also updates the enableViz state based on the query language
-  useEffect(() => {
-    const subscription = services.data.query.state$.subscribe(({ state }) => {
-      setSearchContext({
-        query: state.query,
-        timeRange: state.time,
-        filters: state.filters,
-      });
-    });
-
+    visualizationBuilder.init();
     return () => {
-      subscription.unsubscribe();
+      // reset visualization builder
+      visualizationBuilder.reset();
     };
-  }, [queryString, services.data.query.state$]);
+  }, [visualizationBuilder]);
 
-  const handleStyleChange = (newOptions: Partial<LineChartStyleControls>) => {
-    if (styleOptions) {
-      setStyleOptions({ ...styleOptions, ...newOptions });
-    }
-  };
-
-  // Don't render if visualization is not enabled or data is not ready
-  if (!expression || !visualizationData || !styleOptions) {
-    return null;
-  }
+  const onSelectTimeRange = useCallback(
+    (timeRange?: TimeRange) => {
+      if (timeRange) {
+        dispatch(
+          setDateRange({
+            from: moment(timeRange.from).toISOString(),
+            to: moment(timeRange.to).toISOString(),
+          })
+        );
+        dispatch(clearResults());
+        dispatch(clearQueryStatusMap());
+        // @ts-expect-error TS2345 TODO(ts-error): fixme
+        dispatch(executeQueries({ services }));
+      }
+    },
+    [services, dispatch]
+  );
 
   return (
     <div className="exploreVisContainer">
-      <Visualization
-        expression={expression}
-        searchContext={searchContext}
-        styleOptions={styleOptions}
-        visualizationData={visualizationData}
-        onStyleChange={handleStyleChange}
-        ReactExpressionRenderer={ReactExpressionRenderer}
-      />
+      <EuiPanel
+        hasBorder={false}
+        hasShadow={false}
+        data-test-subj="exploreVisualizationLoader"
+        className="exploreVisPanel"
+        paddingSize="none"
+      >
+        <div className="exploreVisPanel__inner">
+          {visualizationBuilder.renderVisualization({
+            timeRange: searchContext?.timeRange,
+            onSelectTimeRange,
+          })}
+        </div>
+      </EuiPanel>
     </div>
   );
-};
+});

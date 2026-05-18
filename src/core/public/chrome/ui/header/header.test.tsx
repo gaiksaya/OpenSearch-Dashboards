@@ -29,18 +29,21 @@
  */
 
 import { EuiHeaderSectionItemButton } from '@elastic/eui';
-import React from 'react';
-import { act } from 'react-dom/test-utils';
+
+import { act } from 'react';
 import { BehaviorSubject } from 'rxjs';
 import { mountWithIntl } from 'test_utils/enzyme_helpers';
 import { StubBrowserStorage } from 'test_utils/stub_browser_storage';
 import { httpServiceMock } from '../../../http/http_service.mock';
-import { applicationServiceMock, chromeServiceMock } from '../../../mocks';
+import {
+  applicationServiceMock,
+  chromeServiceMock,
+  keyboardShortcutServiceMock,
+} from '../../../mocks';
 import { ISidecarConfig, SIDECAR_DOCKED_MODE } from '../../../overlays';
 import { WorkspaceObject } from 'src/core/public/workspace';
 import { HeaderVariant } from '../../constants';
 import { Header } from './header';
-import { InjectedMetadataStart } from '../../../injected_metadata';
 
 jest.mock('@elastic/eui/lib/services/accessibility/html_id_generator', () => ({
   htmlIdGenerator: () => () => 'mockId',
@@ -49,9 +52,6 @@ jest.mock('@elastic/eui/lib/services/accessibility/html_id_generator', () => ({
 function mockProps() {
   const http = httpServiceMock.createSetupContract({ basePath: '/test' });
   const application = applicationServiceMock.createInternalStartContract();
-  const injectedMetadata = ({
-    getPlugins: jest.fn().mockReturnValue([]),
-  } as unknown) as InjectedMetadataStart;
 
   return {
     http,
@@ -96,7 +96,8 @@ function mockProps() {
     workspaceList$: new BehaviorSubject([]),
     currentWorkspace$: new BehaviorSubject<WorkspaceObject | null>(null),
     useUpdatedHeader: false,
-    injectedMetadata,
+    globalSearchCommands$: new BehaviorSubject([]),
+    navControlsIconSideNavFooter$: new BehaviorSubject([]),
   };
 }
 
@@ -241,7 +242,7 @@ describe('Header', () => {
     expect(component).toMatchSnapshot();
   });
 
-  it('renders application header without title and breadcrumbs', () => {
+  it('renders application header without title', () => {
     const branding = {
       useExpandedHeader: false,
     };
@@ -257,7 +258,7 @@ describe('Header', () => {
     };
     const component = mountWithIntl(<Header {...props} />);
     expect(component.find('[data-test-subj="headerApplicationTitle"]').exists()).toBeFalsy();
-    expect(component.find('[data-test-subj="breadcrumb first"]').exists()).toBeFalsy();
+    expect(component.find('[data-test-subj="breadcrumb first"]').exists()).toBeTruthy();
     expect(component.find('HeaderActionMenu').exists()).toBeFalsy();
     expect(component.find('RecentItems').exists()).toBeTruthy();
     expect(component.find('[data-test-subj="headerRightControl"]').exists()).toBeFalsy();
@@ -280,65 +281,127 @@ describe('Header', () => {
   });
 
   describe('banner plugin integration', () => {
-    it('renders banner container when banner plugin is enabled', () => {
-      const injectedMetadata = ({
-        getPlugins: jest.fn().mockReturnValue([
-          {
-            id: 'banner',
-            config: {
-              enabled: true,
-            },
-          },
-        ]),
-      } as unknown) as InjectedMetadataStart;
-
+    it('renders banner container when banner is present', () => {
       const props = {
         ...mockProps(),
-        injectedMetadata,
+        globalBanner$: new BehaviorSubject({
+          component: 'test-banner',
+        }),
       };
 
       const component = mountWithIntl(<Header {...props} />);
-      expect(component.find('#pluginGlobalBanner').exists()).toBeTruthy();
+      // Check that the header has the correct class
+      expect(component.find('.headerGlobalNav--withBanner').exists()).toBeTruthy();
     });
 
-    it('does not render banner container when banner plugin is disabled', () => {
-      const injectedMetadata = ({
-        getPlugins: jest.fn().mockReturnValue([
-          {
-            id: 'banner',
-            config: {
-              enabled: false,
-            },
-          },
-        ]),
-      } as unknown) as InjectedMetadataStart;
-
+    it('does not render banner container when banner is not present', () => {
       const props = {
         ...mockProps(),
-        injectedMetadata,
+        // No banner content
+        globalBanner$: new BehaviorSubject(undefined),
       };
 
       const component = mountWithIntl(<Header {...props} />);
-      expect(component.find('#pluginGlobalBanner').exists()).toBeFalsy();
+      expect(component.find('.globalBanner').exists()).toBeFalsy();
     });
 
-    it('does not render banner container when banner plugin is not configured', () => {
-      const injectedMetadata = ({
-        getPlugins: jest.fn().mockReturnValue([
-          {
-            id: 'other-plugin',
-            config: {},
-          },
-        ]),
-      } as unknown) as InjectedMetadataStart;
-
+    it('does not render banner container when globalBanner$ is not provided', () => {
       const props = {
         ...mockProps(),
-        injectedMetadata,
+        // No globalBanner$ property
       };
 
       const component = mountWithIntl(<Header {...props} />);
-      expect(component.find('#pluginGlobalBanner').exists()).toBeFalsy();
+      expect(component.find('.globalBanner').exists()).toBeFalsy();
+    });
+
+    it('renders banner container when useUpdatedHeader is true', () => {
+      const props = {
+        ...mockProps(),
+        useUpdatedHeader: true,
+        // Add a mock globalBanner$ observable to simulate a banner being present
+        globalBanner$: new BehaviorSubject({
+          component: 'test-banner',
+        }),
+      };
+
+      const component = mountWithIntl(<Header {...props} />);
+      expect(component.find('.globalBanner').exists()).toBeTruthy();
+    });
+  });
+
+  describe('keyboard shortcuts', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('registers keyboard shortcut for toggle navbar when keyboardShortcut service is provided', () => {
+      const mockKeyboardShortcut = keyboardShortcutServiceMock.createStart();
+      const props = {
+        ...mockProps(),
+        keyboardShortcut: mockKeyboardShortcut,
+      };
+
+      mountWithIntl(<Header {...props} />);
+
+      expect(mockKeyboardShortcut.useKeyboardShortcut).toHaveBeenCalledWith({
+        id: 'toggle_navbar',
+        pluginId: 'core',
+        name: 'Toggle navbar',
+        category: 'Panel / Layout',
+        keys: 'shift+b',
+        execute: expect.any(Function),
+      });
+    });
+
+    it('does not register keyboard shortcut when keyboardShortcut service is not provided', () => {
+      const mockKeyboardShortcut = keyboardShortcutServiceMock.createStart();
+      const props = {
+        ...mockProps(),
+      };
+
+      mountWithIntl(<Header {...props} />);
+
+      expect(mockKeyboardShortcut.useKeyboardShortcut).not.toHaveBeenCalled();
+    });
+
+    it('executes toggle navigation when keyboard shortcut callback is invoked', () => {
+      const mockKeyboardShortcut = keyboardShortcutServiceMock.createStart();
+      const onIsLockedUpdate = jest.fn();
+      const isLocked$ = new BehaviorSubject(false);
+      const props = {
+        ...mockProps(),
+        keyboardShortcut: mockKeyboardShortcut,
+        onIsLockedUpdate,
+        isLocked$,
+        useUpdatedHeader: true,
+      };
+
+      mountWithIntl(<Header {...props} />);
+
+      const shortcutCall = mockKeyboardShortcut.useKeyboardShortcut.mock.calls[0][0];
+      const executeFunction = shortcutCall.execute;
+
+      act(() => {
+        executeFunction();
+      });
+
+      expect(onIsLockedUpdate).toHaveBeenCalledWith(true);
+    });
+
+    it('does not throw error when keyboardShortcut service is undefined', () => {
+      const props = {
+        ...mockProps(),
+        keyboardShortcut: undefined,
+      };
+
+      expect(() => {
+        mountWithIntl(<Header {...props} />);
+      }).not.toThrow();
     });
   });
 });

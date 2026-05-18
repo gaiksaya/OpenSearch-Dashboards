@@ -8,225 +8,196 @@ import {
   createLineBarChart,
   createMultiLineChart,
   createFacetedMultiLineChart,
+  createCategoryLineChart,
+  createCategoryMultiLineChart,
 } from './to_expression';
-import { ThresholdLineStyle, VisColumn, VisFieldType } from '../types';
-import * as lineChartUtils from './line_chart_utils';
-import { Positions } from '../utils/collections';
+import { VisColumn, VisFieldType, ThresholdMode, Positions, AxisRole } from '../types';
+import { defaultLineChartStyles } from './line_vis_config';
 
-// Mock the line chart utils
-jest.mock('./line_chart_utils', () => ({
-  buildMarkConfig: jest.fn().mockReturnValue({ type: 'line', tooltip: true }),
-  createThresholdLayer: jest.fn().mockReturnValue(null),
-  createTimeMarkerLayer: jest.fn().mockReturnValue(null),
-  applyAxisStyling: jest.fn().mockReturnValue({ title: 'Mocked Axis' }),
-  getStrokeDash: jest.fn().mockReturnValue([5, 5]),
-  ValueAxisPosition: {
-    Left: 'left',
-    Right: 'right',
-  },
-}));
-
-describe('to_expression', () => {
-  // Sample data for testing
-  const transformedData = [
-    { 'field-0': '2023-01-01', 'field-1': 100, 'field-2': 'Category A', 'field-3': 'Group 1' },
-    { 'field-0': '2023-01-02', 'field-1': 200, 'field-2': 'Category B', 'field-3': 'Group 2' },
+describe('Line Chart to_expression', () => {
+  const mockData = [
+    { date: '2023-01-01', value: 10, value2: 5, category: 'A', category2: 'X' },
+    { date: '2023-01-02', value: 20, value2: 15, category: 'B', category2: 'Y' },
+    { date: '2023-01-03', value: 15, value2: 10, category: 'A', category2: 'X' },
   ];
 
-  const dateColumn: VisColumn = {
+  const mockDateColumn: VisColumn = {
     id: 0,
-    name: 'date',
+    name: 'Date',
     schema: VisFieldType.Date,
-    column: 'field-0',
+    column: 'date',
+    validValuesCount: 3,
+    uniqueValuesCount: 3,
   };
 
-  const numericColumn1: VisColumn = {
+  const mockNumericColumn: VisColumn = {
     id: 1,
-    name: 'value1',
+    name: 'Value',
     schema: VisFieldType.Numerical,
-    column: 'field-1',
+    column: 'value',
+    validValuesCount: 3,
+    uniqueValuesCount: 3,
   };
 
-  const numericColumn2: VisColumn = {
+  const mockNumericColumn2: VisColumn = {
     id: 2,
-    name: 'value2',
+    name: 'Value2',
     schema: VisFieldType.Numerical,
-    column: 'field-2',
+    column: 'value2',
+    validValuesCount: 3,
+    uniqueValuesCount: 3,
   };
 
-  const categoricalColumn1: VisColumn = {
+  const mockCategoricalColumn: VisColumn = {
     id: 3,
-    name: 'category1',
+    name: 'Category',
     schema: VisFieldType.Categorical,
-    column: 'field-2',
+    column: 'category',
+    validValuesCount: 3,
+    uniqueValuesCount: 2,
   };
 
-  const categoricalColumn2: VisColumn = {
+  const mockCategoricalColumn2: VisColumn = {
     id: 4,
-    name: 'category2',
+    name: 'Category2',
     schema: VisFieldType.Categorical,
-    column: 'field-3',
+    column: 'category2',
+    validValuesCount: 3,
+    uniqueValuesCount: 2,
   };
 
-  const styleOptions = {
-    addTooltip: true,
+  const mockStyles = {
+    ...defaultLineChartStyles,
     addLegend: true,
     legendPosition: Positions.RIGHT,
-    thresholdLine: {
-      show: false,
-      value: 100,
-      color: 'red',
-      width: 1,
-      style: ThresholdLineStyle.Dashed,
+    thresholdOptions: {
+      baseColor: '#00BD6B',
+      thresholds: [],
+      thresholdStyle: ThresholdMode.Off,
     },
-    addTimeMarker: false,
+    showFullTimeRange: false,
   };
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('createSimpleLineChart', () => {
-    it('should create a simple line chart with one metric and one date', () => {
-      // Enable threshold and time marker for this test
-      const mockThresholdLayer = { mark: { type: 'rule' } };
-      const mockTimeMarkerLayer = { mark: { type: 'rule' } };
-      (lineChartUtils.createThresholdLayer as jest.Mock).mockReturnValueOnce(mockThresholdLayer);
-      (lineChartUtils.createTimeMarkerLayer as jest.Mock).mockReturnValueOnce(mockTimeMarkerLayer);
+    const mockAxisMappings = {
+      [AxisRole.Y]: [mockNumericColumn],
+      [AxisRole.X]: mockDateColumn,
+    };
 
-      const result = createSimpleLineChart(
-        transformedData,
-        [numericColumn1],
-        [dateColumn],
-        styleOptions
-      );
+    it('returns an ECharts spec with dataset, series, and axes', () => {
+      const result = createSimpleLineChart(mockData, mockStyles, mockAxisMappings);
 
-      // Verify the result structure
-      expect(result).toHaveProperty('$schema');
-      expect(result).toHaveProperty('title', 'value1 Over Time');
-      expect(result).toHaveProperty('data.values', transformedData);
-      expect(result).toHaveProperty('layer');
-      expect(result.layer).toHaveLength(3); // Main layer + threshold + time marker
+      expect(result).toHaveProperty('dataset');
+      expect(result).toHaveProperty('series');
+      expect(result).toHaveProperty('xAxis');
+      expect(result).toHaveProperty('yAxis');
+    });
 
-      // Verify the main layer
-      expect(result.layer[0]).toHaveProperty('mark');
-      expect(result.layer[0]).toHaveProperty('encoding.x.field', 'field-0');
-      expect(result.layer[0]).toHaveProperty('encoding.y.field', 'field-1');
+    it('produces line-type series', () => {
+      const result = createSimpleLineChart(mockData, mockStyles, mockAxisMappings);
 
-      // Verify utility functions were called
-      expect(lineChartUtils.buildMarkConfig).toHaveBeenCalledWith(styleOptions, 'line');
-      expect(lineChartUtils.applyAxisStyling).toHaveBeenCalledTimes(2);
-      expect(lineChartUtils.createThresholdLayer).toHaveBeenCalledWith(styleOptions);
-      expect(lineChartUtils.createTimeMarkerLayer).toHaveBeenCalledWith(styleOptions);
+      expect(result.series.length).toBeGreaterThanOrEqual(1);
+      expect(result.series[0].type).toBe('line');
     });
   });
 
   describe('createLineBarChart', () => {
-    it('should create a combined line and bar chart with two metrics and one date', () => {
-      const result = createLineBarChart(
-        transformedData,
-        [numericColumn1, numericColumn2],
-        [dateColumn],
-        styleOptions
-      );
+    const mockAxisMappings = {
+      [AxisRole.Y]: [mockNumericColumn],
+      [AxisRole.X]: mockDateColumn,
+      [AxisRole.Y_SECOND]: [mockNumericColumn2],
+    };
 
-      // Verify the result structure
-      expect(result).toHaveProperty('$schema');
-      expect(result).toHaveProperty('title', 'value1 (Bar) and value2 (Line) Over Time');
-      expect(result).toHaveProperty('data.values', transformedData);
-      expect(result).toHaveProperty('layer');
-      expect(result.layer).toHaveLength(2); // Bar layer + line layer (no threshold or time marker in this test)
+    it('returns an ECharts spec with dataset and series', () => {
+      const result = createLineBarChart(mockData, mockStyles, mockAxisMappings);
 
-      // Verify the bar layer
-      expect(result.layer[0]).toHaveProperty('encoding.x.field', 'field-0');
-      expect(result.layer[0]).toHaveProperty('encoding.y.field', 'field-1');
-      expect(result.layer[0]).toHaveProperty('encoding.color.datum', 'value1');
+      expect(result).toHaveProperty('dataset');
+      expect(result).toHaveProperty('series');
+      expect(result.series.length).toBeGreaterThanOrEqual(2);
+    });
 
-      // Verify the line layer
-      expect(result.layer[1]).toHaveProperty('encoding.x.field', 'field-0');
-      expect(result.layer[1]).toHaveProperty('encoding.y.field', 'field-2');
-      expect(result.layer[1]).toHaveProperty('encoding.color.datum', 'value2');
-
-      // Verify the scales are resolved independently
-      expect(result).toHaveProperty('resolve.scale.y', 'independent');
-
-      // Verify utility functions were called
-      expect(lineChartUtils.buildMarkConfig).toHaveBeenCalledWith(styleOptions, 'bar');
-      expect(lineChartUtils.buildMarkConfig).toHaveBeenCalledWith(styleOptions, 'line');
-      expect(lineChartUtils.applyAxisStyling).toHaveBeenCalledTimes(3);
+    it('throws when axis config is missing', () => {
+      expect(() => createLineBarChart(mockData, mockStyles, {} as any)).toThrow();
     });
   });
 
   describe('createMultiLineChart', () => {
-    it('should create a multi-line chart with one metric, one date, and one categorical column', () => {
-      const result = createMultiLineChart(
-        transformedData,
-        [numericColumn1],
-        [categoricalColumn1],
-        [dateColumn],
-        styleOptions
-      );
+    const mockAxisMappings = {
+      [AxisRole.Y]: mockNumericColumn,
+      [AxisRole.X]: mockDateColumn,
+      [AxisRole.COLOR]: mockCategoricalColumn,
+    };
 
-      // Verify the result structure
-      expect(result).toHaveProperty('$schema');
-      expect(result).toHaveProperty('title', 'value1 Over Time by category1');
-      expect(result).toHaveProperty('data.values', transformedData);
-      expect(result).toHaveProperty('layer');
-      expect(result.layer).toHaveLength(1); // Main layer only (no threshold or time marker in this test)
+    it('returns an ECharts spec with multiple series', () => {
+      const result = createMultiLineChart(mockData, mockStyles, mockAxisMappings);
 
-      // Verify the main layer
-      expect(result.layer[0]).toHaveProperty('encoding.x.field', 'field-0');
-      expect(result.layer[0]).toHaveProperty('encoding.y.field', 'field-1');
-      expect(result.layer[0]).toHaveProperty('encoding.color.field', 'field-2');
-
-      // Verify utility functions were called
-      expect(lineChartUtils.buildMarkConfig).toHaveBeenCalledWith(styleOptions, 'line');
-      expect(lineChartUtils.applyAxisStyling).toHaveBeenCalledTimes(2);
+      expect(result).toHaveProperty('dataset');
+      expect(result).toHaveProperty('series');
+      expect(result.series.length).toBeGreaterThanOrEqual(1);
     });
   });
 
   describe('createFacetedMultiLineChart', () => {
-    it('should create a faceted multi-line chart with one metric, one date, and two categorical columns', () => {
-      // Enable threshold and time marker for this test
-      styleOptions.thresholdLine.show = true;
-      styleOptions.addTimeMarker = true;
+    const mockAxisMappings = {
+      [AxisRole.Y]: mockNumericColumn,
+      [AxisRole.X]: mockDateColumn,
+      [AxisRole.COLOR]: mockCategoricalColumn,
+      [AxisRole.FACET]: mockCategoricalColumn2,
+    };
 
-      const result = createFacetedMultiLineChart(
-        transformedData,
-        [numericColumn1],
-        [categoricalColumn1, categoricalColumn2],
-        [dateColumn],
-        styleOptions
-      );
+    it('returns an ECharts spec with faceted datasets', () => {
+      const result = createFacetedMultiLineChart(mockData, mockStyles, mockAxisMappings);
 
-      // Verify the result structure
-      expect(result).toHaveProperty('$schema');
-      expect(result).toHaveProperty(
-        'title',
-        'value1 Over Time by category1 (Faceted by category2)'
-      );
-      expect(result).toHaveProperty('data.values', transformedData);
-      expect(result).toHaveProperty('facet.field', 'field-3');
-      expect(result).toHaveProperty('spec.layer');
-      expect(result.spec.layer).toHaveLength(3); // Main layer + threshold + time marker
+      expect(result).toHaveProperty('dataset');
+      expect(result).toHaveProperty('series');
+    });
+  });
 
-      // Verify the main layer
-      expect(result.spec.layer[0]).toHaveProperty('encoding.x.field', 'field-0');
-      expect(result.spec.layer[0]).toHaveProperty('encoding.y.field', 'field-1');
-      expect(result.spec.layer[0]).toHaveProperty('encoding.color.field', 'field-2');
+  describe('createCategoryLineChart', () => {
+    const mockAxisMappings = {
+      [AxisRole.Y]: [mockNumericColumn],
+      [AxisRole.X]: mockCategoricalColumn,
+    };
 
-      // Verify the threshold layer
-      expect(result.spec.layer[1]).toHaveProperty('mark.type', 'rule');
-      expect(result.spec.layer[1]).toHaveProperty('encoding.y.datum', 100);
+    it('returns an ECharts spec for category-based line chart', () => {
+      const result = createCategoryLineChart(mockData, mockStyles, mockAxisMappings);
 
-      // Verify the time marker layer
-      expect(result.spec.layer[2]).toHaveProperty('mark.type', 'rule');
-      expect(result.spec.layer[2]).toHaveProperty('encoding.x.datum');
+      expect(result).toHaveProperty('dataset');
+      expect(result).toHaveProperty('series');
+      expect(result.series[0].type).toBe('line');
+    });
+  });
 
-      // Verify utility functions were called
-      expect(lineChartUtils.buildMarkConfig).toHaveBeenCalledWith(styleOptions, 'line');
-      expect(lineChartUtils.applyAxisStyling).toHaveBeenCalledTimes(2);
-      expect(lineChartUtils.getStrokeDash).toHaveBeenCalled();
+  describe('createCategoryMultiLineChart', () => {
+    const mockAxisMappings = {
+      [AxisRole.Y]: mockNumericColumn,
+      [AxisRole.X]: mockCategoricalColumn,
+      [AxisRole.COLOR]: mockCategoricalColumn2,
+    };
+
+    it('returns an ECharts spec with multiple category-based series', () => {
+      const result = createCategoryMultiLineChart(mockData, mockStyles, mockAxisMappings);
+
+      expect(result).toHaveProperty('dataset');
+      expect(result).toHaveProperty('series');
+      expect(result.series.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('includes markLine for threshold when enabled', () => {
+      const stylesWithThreshold = {
+        ...mockStyles,
+        thresholdOptions: {
+          baseColor: '#00BD6B',
+          thresholds: [{ value: 15, color: '#E7664C' }],
+          thresholdStyle: ThresholdMode.Solid,
+        },
+      };
+
+      const result = createCategoryMultiLineChart(mockData, stylesWithThreshold, mockAxisMappings);
+
+      const seriesWithMarkLine = result.series.find((s: any) => s.markLine);
+      expect(seriesWithMarkLine).toBeDefined();
+      expect(seriesWithMarkLine.markLine.data[0].yAxis).toBe(15);
     });
   });
 });

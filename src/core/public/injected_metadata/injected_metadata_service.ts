@@ -76,6 +76,10 @@ export interface InjectedMetadataParams {
     };
     branding: Branding;
     survey?: string;
+    enableIconSideNav: boolean;
+    keyboardShortcuts: {
+      enabled: boolean;
+    };
   };
 }
 
@@ -153,6 +157,14 @@ export class InjectedMetadataService {
       getSurvey: () => {
         return this.state.survey;
       },
+
+      getEnableIconSideNav: () => {
+        return this.state.enableIconSideNav;
+      },
+
+      getKeyboardShortcuts: () => {
+        return this.state.keyboardShortcuts;
+      },
     };
   }
 }
@@ -188,6 +200,10 @@ export interface InjectedMetadataSetup {
   };
   getBranding: () => Branding;
   getSurvey: () => string | undefined;
+  getEnableIconSideNav: () => boolean;
+  getKeyboardShortcuts: () => {
+    enabled: boolean;
+  };
 }
 
 /** @internal */

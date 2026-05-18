@@ -28,7 +28,6 @@
  * under the License.
  */
 
-import React from 'react';
 import { i18n } from '@osd/i18n';
 import { mapToLayerWithId } from './util';
 import { createRegionMapVisualization } from './region_map_visualization';
@@ -108,6 +107,7 @@ export function createRegionMapTypeDefinition(dependencies) {
 provided base maps, or add your own. Darker colors represent higher values.',
     }),
     icon: 'visMapRegion',
+    isClassic: true,
     visConfig: {
       defaults: {
         layerChosenByUser: DEFAULT_MAP_CHOICE,

@@ -9,8 +9,6 @@
  * GitHub history for details.
  */
 
-import { BannerService } from './services/banner_service';
-
 /**
  * Setup contract for the banner plugin.
  * Intentionally empty for now as the plugin doesn't expose any setup functionality.
@@ -21,6 +19,5 @@ export interface BannerPluginSetup {}
 /**
  * Start contract for the banner plugin.
  */
-export interface BannerPluginStart {
-  bannerService: BannerService;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface BannerPluginStart {}

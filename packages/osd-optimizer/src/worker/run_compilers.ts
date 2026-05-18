@@ -34,9 +34,10 @@ import Fs from 'fs';
 import Path from 'path';
 import { inspect } from 'util';
 
-import webpack, { Stats } from 'webpack';
+// import webpack, { Stats } from 'webpack';
+import { rspack, Compiler, Stats } from '@rspack/core';
 import * as Rx from 'rxjs';
-import { mergeMap, map, mapTo, takeUntil } from 'rxjs/operators';
+import { mergeMap, map, mapTo, takeUntil, finalize } from 'rxjs/operators';
 
 import {
   CompilerMsgs,
@@ -48,9 +49,8 @@ import {
   parseFilePath,
   BundleRefs,
 } from '../common';
-import { BundleRefModule } from './bundle_ref_module';
-import { getWebpackConfig } from './webpack.config';
-import { isFailureStats, failedStatsToErrorMessage } from './webpack_helpers';
+import { getWebpackConfig, sassCompiler } from './webpack.config';
+import { isFailureStats, failedStatsToErrorMessage, isContextModule } from './webpack_helpers';
 import {
   isExternalModule,
   isNormalModule,
@@ -58,7 +58,6 @@ import {
   isConcatenatedModule,
   getModulePath,
 } from './webpack_helpers';
-import { getHashes } from '../optimizer/get_hashes';
 
 const PLUGIN_NAME = '@osd/optimizer';
 
@@ -77,7 +76,8 @@ const EXTRA_SCSS_WORK_UNITS = 100;
 const observeCompiler = (
   workerConfig: WorkerConfig,
   bundle: Bundle,
-  compiler: webpack.Compiler
+  compiler: Compiler,
+  bundleRefs: BundleRefs
 ): Rx.Observable<CompilerMsg> => {
   const compilerMsgs = new CompilerMsgs(bundle.id);
   const done$ = new Rx.Subject();
@@ -98,7 +98,6 @@ const observeCompiler = (
    */
   const complete$ = Rx.fromEventPattern<Stats>((cb) => done.tap(PLUGIN_NAME, cb)).pipe(
     maybeMap((stats) => {
-      // @ts-expect-error not included in types, but it is real https://github.com/webpack/webpack/blob/ab4fa8ddb3f433d286653cd6af7e3aad51168649/lib/Watching.js#L58
       if (stats.compilation.needAdditionalPass) {
         return undefined;
       }
@@ -123,7 +122,7 @@ const observeCompiler = (
       const bundleRefExportIds: string[] = [];
       const referencedFiles = new Set<string>();
       let moduleCount = 0;
-      let workUnits = stats.compilation.fileDependencies.size;
+      let workUnits = [...stats.compilation.fileDependencies].length;
 
       if (bundle.manifestPath) {
         referencedFiles.add(bundle.manifestPath);
@@ -134,6 +133,16 @@ const observeCompiler = (
           moduleCount += 1;
           const path = getModulePath(module);
           const parsedPath = parseFilePath(path);
+
+          // if the current bundle referenced other bundles, add the referenced bundle to bundleRefExportIds
+          if (!path.startsWith(bundle.contextDir)) {
+            const ref = bundleRefs
+              .getRefs()
+              .find((r) => path.startsWith(Path.join(r.contextDir, r.entry)));
+            if (ref) {
+              bundleRefExportIds.push(ref.exportId);
+            }
+          }
 
           if (!parsedPath.dirs.includes('node_modules')) {
             referencedFiles.add(path);
@@ -161,17 +170,12 @@ const observeCompiler = (
           continue;
         }
 
-        if (module instanceof BundleRefModule) {
-          bundleRefExportIds.push(module.ref.exportId);
-          continue;
-        }
-
         if (isConcatenatedModule(module)) {
           moduleCount += module.modules.length;
           continue;
         }
 
-        if (isExternalModule(module) || isIgnoredModule(module)) {
+        if (isExternalModule(module) || isContextModule(module) || isIgnoredModule(module)) {
           continue;
         }
 
@@ -180,20 +184,12 @@ const observeCompiler = (
 
       const files = Array.from(referencedFiles).sort(ascending((p) => p));
 
-      getHashes(files)
-        .then((hashes) => {
-          bundle.cache.set({
-            bundleRefExportIds,
-            optimizerCacheKey: workerConfig.optimizerCacheKey,
-            cacheKey: bundle.createCacheKey(files, hashes),
-            moduleCount,
-            workUnits,
-            files,
-          });
-        })
-        .catch((_err) => {
-          // If cache fails to write, it's alright to ignore and reattempt next build
-        });
+      bundle.cache.set({
+        bundleRefExportIds: [...new Set(bundleRefExportIds)],
+        moduleCount,
+        workUnits,
+        files,
+      });
 
       return compilerMsgs.compilerSuccess({
         moduleCount,
@@ -229,7 +225,7 @@ export const runCompilers = (
   bundles: Bundle[],
   bundleRefs: BundleRefs
 ) => {
-  const multiCompiler = webpack(
+  const multiCompiler = rspack(
     bundles.map((def) => getWebpackConfig(def, bundleRefs, workerConfig))
   );
 
@@ -244,7 +240,13 @@ export const runCompilers = (
     Rx.from(multiCompiler.compilers.entries()).pipe(
       mergeMap(([compilerIndex, compiler]) => {
         const bundle = bundles[compilerIndex];
-        return observeCompiler(workerConfig, bundle, compiler);
+        return observeCompiler(workerConfig, bundle, compiler, bundleRefs);
+      }),
+      finalize(() => {
+        // Dispose of SASS compilers when all compilations are complete
+        if (!workerConfig.watch) {
+          sassCompiler.dispose();
+        }
       })
     ),
 

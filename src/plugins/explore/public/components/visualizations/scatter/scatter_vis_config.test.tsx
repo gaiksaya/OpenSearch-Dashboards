@@ -1,0 +1,64 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React from 'react';
+import { createScatterConfig, defaultScatterChartStyles } from './scatter_vis_config';
+import { ScatterVisStyleControls } from './scatter_vis_options';
+import { Positions, PointShape, ThresholdMode } from '../types';
+
+// Mock the React.createElement function
+jest.mock('react', () => ({
+  ...jest.requireActual('react'),
+  createElement: jest.fn(),
+}));
+
+describe('createScatterConfig', () => {
+  it('should create a scatter visualization type configuration', () => {
+    const config = createScatterConfig();
+
+    // Verify the basic structure
+    expect(config).toHaveProperty('name', 'Scatter');
+    expect(config).toHaveProperty('type', 'scatter');
+    expect(config).toHaveProperty('ui.style.defaults');
+    expect(config).toHaveProperty('ui.style.render');
+  });
+
+  it('should have the correct default style settings', () => {
+    const config = createScatterConfig();
+    const defaults = config.ui.style.defaults;
+    // Verify basic controls
+    expect(defaults.tooltipOptions.mode).toBe('all');
+    expect(defaults.addLegend).toBe(true);
+    expect(defaults.legendPosition).toBe(Positions.BOTTOM);
+    // Verify exclusive style
+    expect(defaults.exclusive.pointShape).toBe(PointShape.CIRCLE);
+    expect(defaults.exclusive.angle).toBe(0);
+    expect(defaults.exclusive.filled).toBe(true);
+
+    expect(defaults.thresholdOptions).toMatchObject({
+      baseColor: '#00BD6B',
+      thresholds: [],
+      thresholdStyle: ThresholdMode.Off,
+    });
+  });
+  it('should render the ScatterVisStyleControls component with the provided props', () => {
+    const config = createScatterConfig();
+    const renderFunction = config.ui.style.render;
+    // Mock props
+    const mockProps = {
+      styleOptions: defaultScatterChartStyles,
+      onStyleChange: jest.fn(),
+      numericalColumns: [],
+      categoricalColumns: [],
+      dateColumns: [],
+      axisColumnMappings: {},
+      updateVisualization: jest.fn(),
+    };
+    // Call the render function
+    renderFunction(mockProps);
+    // Verify that React.createElement was called with the correct arguments
+    expect(React.createElement).toHaveBeenCalledWith(ScatterVisStyleControls, mockProps);
+  });
+});

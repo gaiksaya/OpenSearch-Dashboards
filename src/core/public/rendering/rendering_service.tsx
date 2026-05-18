@@ -28,8 +28,7 @@
  * under the License.
  */
 
-import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { I18nProvider } from '@osd/i18n/react';
 
 import { InternalChromeStart } from '../chrome';
@@ -58,7 +57,8 @@ export class RenderingService {
     const appUi = application.getComponent();
     const bannerUi = overlays.banners.getComponent();
 
-    ReactDOM.render(
+    const root = createRoot(targetDomElement);
+    root.render(
       <I18nProvider>
         <div className="content" data-test-subj="opensearchDashboardsChrome">
           {chromeUi}
@@ -66,6 +66,8 @@ export class RenderingService {
           <AppWrapper
             chromeVisible$={chrome.getIsVisible$()}
             sidecarConfig$={overlays.sidecar.getSidecarConfig$()}
+            useUpdatedHeader={(chrome as any).useUpdatedHeader}
+            globalBanner$={chrome.getGlobalBanner$()}
           >
             <div className="app-wrapper-panel">
               <div id="globalBannerList">{bannerUi}</div>
@@ -73,8 +75,7 @@ export class RenderingService {
             </div>
           </AppWrapper>
         </div>
-      </I18nProvider>,
-      targetDomElement
+      </I18nProvider>
     );
   }
 }

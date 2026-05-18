@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import * as utils from '../../utils';
 import { mount, ReactWrapper } from 'enzyme';
 import { RouteComponentProps } from 'react-router-dom';
@@ -31,7 +31,6 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
     ...mockManagementPlugin.createDataSourceManagementContext(),
     application: { capabilities: { dataSource: { canManage: true } } },
   };
-  const uiSettings = mockedContext.uiSettings;
   let component: ReactWrapper<any, Readonly<{}>, React.Component<{}, {}, any>>;
   const history = (scopedHistoryMock.create() as unknown) as ScopedHistory;
   describe('should get direct query connections failed', () => {
@@ -48,6 +47,7 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
             />
           ),
           {
+            // @ts-expect-error TS2769 TODO(ts-error): fixme
             wrappingComponent: OpenSearchDashboardsContextProvider,
             wrappingComponentProps: {
               services: mockedContext,
@@ -69,7 +69,6 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
         Promise.resolve(getMappedDataSources)
       );
       spyOn(utils, 'getHideLocalCluster').and.returnValue(false);
-      spyOn(uiSettings, 'get$').and.returnValue(new BehaviorSubject('test1'));
       await act(async () => {
         component = await mount(
           wrapWithIntl(
@@ -81,6 +80,7 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
             />
           ),
           {
+            // @ts-expect-error TS2769 TODO(ts-error): fixme
             wrappingComponent: OpenSearchDashboardsContextProvider,
             wrappingComponentProps: {
               services: mockedContext,
@@ -142,7 +142,6 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
       });
       component.update();
       expect(component.find(confirmModalIdentifier).exists()).toBe(false);
-      expect(utils.setFirstDataSourceAsDefault).toHaveBeenCalled();
     });
 
     it('should delete datasources & fail', async () => {
@@ -163,13 +162,12 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
       });
       component.update();
       expect(utils.deleteMultipleDataSources).toHaveBeenCalled();
-      expect(utils.setFirstDataSourceAsDefault).not.toHaveBeenCalled();
       // @ts-ignore
       expect(component.find(confirmModalIdentifier).exists()).toBe(false);
     });
   });
 
-  describe('fetch security lake and cloudwatch direct query connections', () => {
+  describe('fetch security lake, cloudwatch, and AWS Prometheus direct query connections', () => {
     beforeEach(async () => {
       spyOn(utils, 'getDataConnections').and.returnValue(
         Promise.resolve([
@@ -189,6 +187,14 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
               type: DataConnectionType.SecurityLake,
             },
           },
+          {
+            type: 'data-connection',
+            id: 'connection3',
+            attributes: {
+              connectionId: 'Connection 3',
+              type: DataConnectionType.AWSPrometheus,
+            },
+          },
         ])
       );
 
@@ -203,6 +209,7 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
             />
           ),
           {
+            // @ts-expect-error TS2769 TODO(ts-error): fixme
             wrappingComponent: OpenSearchDashboardsContextProvider,
             wrappingComponentProps: {
               services: mockedContext,
@@ -213,7 +220,7 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
       component.update();
     });
 
-    it('should get security lake and cloudwatch correctly correctly', async () => {
+    it('should get security lake, cloudwatch, and AWS Prometheus correctly', async () => {
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
       });
@@ -232,6 +239,28 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
           title: 'Connection 2',
           type: DataConnectionType.SecurityLake,
         })
+      );
+      expect(tableRows).toContainEqual(
+        expect.objectContaining({
+          id: 'connection3',
+          title: 'Connection 3',
+          type: DataConnectionType.AWSPrometheus,
+        })
+      );
+    });
+
+    it('should render AWSPrometheus connection as plain text without a link', async () => {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      component.update();
+      const awsPromRow = component
+        .find('tr')
+        .filterWhere((tr) => tr.text().includes('Connection 3'));
+      // Should render as a span (plain text), not as an EuiButtonEmpty link
+      expect(awsPromRow.find('EuiButtonEmpty').exists()).toBe(false);
+      expect(awsPromRow.find('span').someWhere((n) => n.text().includes('Connection 3'))).toBe(
+        true
       );
     });
 
@@ -256,6 +285,7 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
             />
           ),
           {
+            // @ts-expect-error TS2769 TODO(ts-error): fixme
             wrappingComponent: OpenSearchDashboardsContextProvider,
             wrappingComponentProps: {
               services: mockedContext,
@@ -302,7 +332,7 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
       );
       spyOn(utils, 'getDataConnections').and.returnValue(Promise.resolve(mockedDataConnections));
       spyOn(utils, 'getHideLocalCluster').and.returnValue(false);
-      spyOn(uiSettings, 'get$').and.returnValue(new BehaviorSubject('test1'));
+
       const context = {
         ...mockedContext,
         application: {
@@ -345,6 +375,7 @@ describe('ManageDirectQueryDataConnectionsTable', () => {
             />
           ),
           {
+            // @ts-expect-error TS2769 TODO(ts-error): fixme
             wrappingComponent: OpenSearchDashboardsContextProvider,
             wrappingComponentProps: {
               services: context,

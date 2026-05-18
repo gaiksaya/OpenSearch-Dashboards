@@ -5,6 +5,13 @@
 
 import { ParseTree, Token, TokenStream } from 'antlr4ng';
 import * as c3 from 'antlr4-c3';
+import {
+  OpenSearchSQLLexer,
+  OpenSearchSQLParserVisitor,
+  OpenSearchSQLParser,
+  SelectElementsContext,
+  TableNameContext,
+} from '@osd/antlr-grammar';
 import { ColumnAliasSymbol, TableSymbol } from './symbol_table';
 import {
   AutocompleteData,
@@ -16,13 +23,6 @@ import {
   OpenSearchSqlAutocompleteResult,
   ColumnValuePredicate,
 } from '../shared/types';
-import { OpenSearchSQLLexer } from './.generated/OpenSearchSQLLexer';
-import {
-  OpenSearchSQLParser,
-  SelectElementsContext,
-  TableNameContext,
-} from './.generated/OpenSearchSQLParser';
-import { OpenSearchSQLParserVisitor } from './.generated/OpenSearchSQLParserVisitor';
 import {
   TableQueryPosition,
   TokenDictionary,
@@ -32,6 +32,7 @@ import {
 import { shouldSuggestTemplates } from './parse';
 import { removePotentialBackticks } from '../shared/utils';
 
+// @ts-expect-error TS2741 TODO(ts-error): fixme
 const tokenDictionary: TokenDictionary = {
   SPACE: OpenSearchSQLParser.SPACE,
   FROM: OpenSearchSQLParser.FROM,

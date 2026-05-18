@@ -12,6 +12,10 @@ import * as utils from '../shared/utils';
 import { PPL_AGGREGATE_FUNCTIONS } from './constants';
 
 describe('ppl code_completion', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+  });
+
   describe('getSuggestions', () => {
     const mockIndexPattern = {
       title: 'test-index',
@@ -106,8 +110,7 @@ describe('ppl code_completion', () => {
 
     it('should suggest aggregate functions for stats', async () => {
       const result = await getSimpleSuggestions('source = test-index | stats ');
-
-      [...PPL_AGGREGATE_FUNCTIONS, 'count'].forEach((af) => {
+      Object.keys(PPL_AGGREGATE_FUNCTIONS).forEach((af) => {
         checkSuggestionsContain(result, {
           text: `${af}()`,
           type: monaco.languages.CompletionItemKind.Function,
@@ -121,6 +124,23 @@ describe('ppl code_completion', () => {
       checkSuggestionsContain(result, {
         text: 'as',
         type: monaco.languages.CompletionItemKind.Keyword,
+      });
+    });
+
+    it('should always use compiled default grammar (runtime grammar is only for simplified path)', async () => {
+      const result = await getDefaultSuggestions({
+        query: 'source = ',
+        indexPattern: mockIndexPattern,
+        position: new monaco.Position(1, 'source = '.length + 1),
+        language: 'PPL',
+        selectionStart: 0,
+        selectionEnd: 0,
+        services: mockServices,
+      });
+
+      checkSuggestionsContain(result, {
+        text: 'test-index',
+        type: monaco.languages.CompletionItemKind.Struct,
       });
     });
   });

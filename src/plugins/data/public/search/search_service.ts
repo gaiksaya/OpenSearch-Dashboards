@@ -63,7 +63,7 @@ import {
   IDataFrameResponse,
   createDataFrameCache,
 } from '../../common/data_frames';
-import { getQueryService } from '../services';
+import { getQueryService, getSavedObjects } from '../services';
 import { UI_SETTINGS } from '../../common';
 
 /** @internal */
@@ -149,6 +149,15 @@ export class SearchService implements Plugin<ISearchSetup, ISearchStart> {
     };
   }
 
+  // Get language id from the request if available. QueryStringManager returns
+  // the global language id, which won't work in dashboard with different
+  // visualizations.
+  private getLanguageId(request: Parameters<ISearchStart['search']>[0]): string | undefined {
+    if (request.params?.body?.query?.queries?.[0]?.language)
+      return request.params.body.query.queries[0].language;
+    if (request.params?.body?.query?.bool) return 'kuery';
+  }
+
   public start(
     { application, http, notifications, uiSettings }: CoreStart,
     { fieldFormats, indexPatterns }: SearchServiceStartDependencies
@@ -157,7 +166,7 @@ export class SearchService implements Plugin<ISearchSetup, ISearchStart> {
       const isEnhancedEnabled = uiSettings.get(UI_SETTINGS.QUERY_ENHANCEMENTS_ENABLED);
       if (isEnhancedEnabled && !options?.strategy) {
         const queryStringManager = getQueryService().queryString;
-        const language = queryStringManager.getQuery().language;
+        const language = this.getLanguageId(request) || queryStringManager.getQuery().language;
         const languageConfig = queryStringManager.getLanguageService().getLanguage(language);
         queryStringManager.getLanguageService().setUiOverridesByUserQueryLanguage(language);
 
@@ -207,6 +216,22 @@ export class SearchService implements Plugin<ISearchSetup, ISearchStart> {
         loadingCount$,
       },
       df: dfService,
+      // Centralized hook so `createSearchSource` can prime the index-pattern cache
+      // for non-INDEX_PATTERN datasets (INDEXES, S3, Prometheus, etc.) that have no
+      // backing saved object. Used by Discover, the Explore embeddable factory, and
+      // any other consumer of `searchSource.create()`.
+      hydrateDataset: async (dataset) => {
+        const datasetService = getQueryService().queryString.getDatasetService();
+        await datasetService.cacheDataset(dataset, {
+          uiSettings,
+          savedObjects: getSavedObjects(),
+          notifications,
+          http,
+          // `data` is only used by cacheDataset's non-default branch (dataViews.create);
+          // the default path we hit here doesn't need it, so omit to avoid a
+          // circular reference through DataPublicPluginStart.
+        } as any);
+      },
     };
 
     return {

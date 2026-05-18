@@ -241,6 +241,43 @@ exports[`Header handles visibility and lock changes 1`] = `
               "syncErrorThrown": false,
               "syncErrorValue": null,
             },
+            Subscriber {
+              "_parentOrParents": null,
+              "_subscriptions": Array [
+                SubjectSubscription {
+                  "_parentOrParents": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "subject": [Circular],
+                  "subscriber": [Circular],
+                },
+              ],
+              "closed": false,
+              "destination": SafeSubscriber {
+                "_complete": undefined,
+                "_context": [Circular],
+                "_error": undefined,
+                "_next": [Function],
+                "_parentOrParents": null,
+                "_parentSubscriber": [Circular],
+                "_subscriptions": null,
+                "closed": false,
+                "destination": Object {
+                  "closed": true,
+                  "complete": [Function],
+                  "error": [Function],
+                  "next": [Function],
+                },
+                "isStopped": false,
+                "syncErrorThrowable": false,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
+              "isStopped": false,
+              "syncErrorThrowable": true,
+              "syncErrorThrown": false,
+              "syncErrorValue": null,
+            },
           ],
           "thrownError": null,
         },
@@ -903,7 +940,45 @@ exports[`Header handles visibility and lock changes 1`] = `
       "closed": false,
       "hasError": false,
       "isStopped": false,
-      "observers": Array [],
+      "observers": Array [
+        Subscriber {
+          "_parentOrParents": null,
+          "_subscriptions": Array [
+            SubjectSubscription {
+              "_parentOrParents": [Circular],
+              "_subscriptions": null,
+              "closed": false,
+              "subject": [Circular],
+              "subscriber": [Circular],
+            },
+          ],
+          "closed": false,
+          "destination": SafeSubscriber {
+            "_complete": undefined,
+            "_context": [Circular],
+            "_error": undefined,
+            "_next": [Function],
+            "_parentOrParents": null,
+            "_parentSubscriber": [Circular],
+            "_subscriptions": null,
+            "closed": false,
+            "destination": Object {
+              "closed": true,
+              "complete": [Function],
+              "error": [Function],
+              "next": [Function],
+            },
+            "isStopped": false,
+            "syncErrorThrowable": false,
+            "syncErrorThrown": false,
+            "syncErrorValue": null,
+          },
+          "isStopped": false,
+          "syncErrorThrowable": true,
+          "syncErrorThrown": false,
+          "syncErrorValue": null,
+        },
+      ],
       "thrownError": null,
     }
   }
@@ -1055,6 +1130,17 @@ exports[`Header handles visibility and lock changes 1`] = `
           "syncErrorValue": null,
         },
       ],
+      "thrownError": null,
+    }
+  }
+  globalSearchCommands$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
       "thrownError": null,
     }
   }
@@ -1834,26 +1920,6 @@ exports[`Header handles visibility and lock changes 1`] = `
       "put": [MockFunction],
     }
   }
-  injectedMetadata={
-    Object {
-      "getPlugins": [MockFunction] {
-        "calls": Array [
-          Array [],
-          Array [],
-        ],
-        "results": Array [
-          Object {
-            "type": "return",
-            "value": Array [],
-          },
-          Object {
-            "type": "return",
-            "value": Array [],
-          },
-        ],
-      },
-    }
-  }
   intl={
     Object {
       "defaultFormats": Object {},
@@ -2463,6 +2529,17 @@ exports[`Header handles visibility and lock changes 1`] = `
       "thrownError": null,
     }
   }
+  navControlsIconSideNavFooter$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
+      "thrownError": null,
+    }
+  }
   navControlsLeft$={
     BehaviorSubject {
       "_isScalar": false,
@@ -2924,6 +3001,13 @@ exports[`Header handles visibility and lock changes 1`] = `
     }
   }
 >
+  <HeaderBanner
+    style={
+      Object {
+        "paddingRight": 648,
+      }
+    }
+  />
   <header
     className="hide-for-sharing headerGlobalNav"
     data-test-subj="headerGlobalNav"
@@ -3530,7 +3614,7 @@ exports[`Header handles visibility and lock changes 1`] = `
         }
         style={
           Object {
-            "paddingRight": 640,
+            "paddingRight": 648,
           }
         }
         theme="dark"
@@ -3539,7 +3623,7 @@ exports[`Header handles visibility and lock changes 1`] = `
           className="euiHeader euiHeader--dark euiHeader--fixed expandedHeader"
           style={
             Object {
-              "paddingRight": 640,
+              "paddingRight": 648,
             }
           }
         >
@@ -4113,7 +4197,7 @@ exports[`Header handles visibility and lock changes 1`] = `
         position="fixed"
         style={
           Object {
-            "paddingRight": 640,
+            "paddingRight": 648,
           }
         }
       >
@@ -4121,7 +4205,7 @@ exports[`Header handles visibility and lock changes 1`] = `
           className="euiHeader euiHeader--default euiHeader--fixed primaryHeader"
           style={
             Object {
-              "paddingRight": 640,
+              "paddingRight": 648,
             }
           }
         >
@@ -7434,6 +7518,43 @@ exports[`Header handles visibility and lock changes 1`] = `
                 "syncErrorThrown": false,
                 "syncErrorValue": null,
               },
+              Subscriber {
+                "_parentOrParents": null,
+                "_subscriptions": Array [
+                  SubjectSubscription {
+                    "_parentOrParents": [Circular],
+                    "_subscriptions": null,
+                    "closed": false,
+                    "subject": [Circular],
+                    "subscriber": [Circular],
+                  },
+                ],
+                "closed": false,
+                "destination": SafeSubscriber {
+                  "_complete": undefined,
+                  "_context": [Circular],
+                  "_error": undefined,
+                  "_next": [Function],
+                  "_parentOrParents": null,
+                  "_parentSubscriber": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "destination": Object {
+                    "closed": true,
+                    "complete": [Function],
+                    "error": [Function],
+                    "next": [Function],
+                  },
+                  "isStopped": false,
+                  "syncErrorThrowable": false,
+                  "syncErrorThrown": false,
+                  "syncErrorValue": null,
+                },
+                "isStopped": false,
+                "syncErrorThrowable": true,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
             ],
             "thrownError": null,
           },
@@ -8265,7 +8386,7 @@ exports[`Header handles visibility and lock changes 1`] = `
 </Header>
 `;
 
-exports[`Header renders application header without title and breadcrumbs 1`] = `
+exports[`Header renders application header without title 1`] = `
 <Header
   appTitle$={
     BehaviorSubject {
@@ -8274,7 +8395,45 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
       "closed": false,
       "hasError": false,
       "isStopped": false,
-      "observers": Array [],
+      "observers": Array [
+        Subscriber {
+          "_parentOrParents": null,
+          "_subscriptions": Array [
+            SubjectSubscription {
+              "_parentOrParents": [Circular],
+              "_subscriptions": null,
+              "closed": false,
+              "subject": [Circular],
+              "subscriber": [Circular],
+            },
+          ],
+          "closed": false,
+          "destination": SafeSubscriber {
+            "_complete": undefined,
+            "_context": [Circular],
+            "_error": undefined,
+            "_next": [Function],
+            "_parentOrParents": null,
+            "_parentSubscriber": [Circular],
+            "_subscriptions": null,
+            "closed": false,
+            "destination": Object {
+              "closed": true,
+              "complete": [Function],
+              "error": [Function],
+              "next": [Function],
+            },
+            "isStopped": false,
+            "syncErrorThrowable": false,
+            "syncErrorThrown": false,
+            "syncErrorValue": null,
+          },
+          "isStopped": false,
+          "syncErrorThrowable": true,
+          "syncErrorThrown": false,
+          "syncErrorValue": null,
+        },
+      ],
       "thrownError": null,
     }
   }
@@ -8394,6 +8553,43 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
           "hasError": false,
           "isStopped": false,
           "observers": Array [
+            Subscriber {
+              "_parentOrParents": null,
+              "_subscriptions": Array [
+                SubjectSubscription {
+                  "_parentOrParents": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "subject": [Circular],
+                  "subscriber": [Circular],
+                },
+              ],
+              "closed": false,
+              "destination": SafeSubscriber {
+                "_complete": undefined,
+                "_context": [Circular],
+                "_error": undefined,
+                "_next": [Function],
+                "_parentOrParents": null,
+                "_parentSubscriber": [Circular],
+                "_subscriptions": null,
+                "closed": false,
+                "destination": Object {
+                  "closed": true,
+                  "complete": [Function],
+                  "error": [Function],
+                  "next": [Function],
+                },
+                "isStopped": false,
+                "syncErrorThrowable": false,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
+              "isStopped": false,
+              "syncErrorThrowable": true,
+              "syncErrorThrown": false,
+              "syncErrorValue": null,
+            },
             Subscriber {
               "_parentOrParents": null,
               "_subscriptions": Array [
@@ -8966,6 +9162,43 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
           "syncErrorThrown": false,
           "syncErrorValue": null,
         },
+        Subscriber {
+          "_parentOrParents": null,
+          "_subscriptions": Array [
+            SubjectSubscription {
+              "_parentOrParents": [Circular],
+              "_subscriptions": null,
+              "closed": false,
+              "subject": [Circular],
+              "subscriber": [Circular],
+            },
+          ],
+          "closed": false,
+          "destination": SafeSubscriber {
+            "_complete": undefined,
+            "_context": [Circular],
+            "_error": undefined,
+            "_next": [Function],
+            "_parentOrParents": null,
+            "_parentSubscriber": [Circular],
+            "_subscriptions": null,
+            "closed": false,
+            "destination": Object {
+              "closed": true,
+              "complete": [Function],
+              "error": [Function],
+              "next": [Function],
+            },
+            "isStopped": false,
+            "syncErrorThrowable": false,
+            "syncErrorThrown": false,
+            "syncErrorValue": null,
+          },
+          "isStopped": false,
+          "syncErrorThrowable": true,
+          "syncErrorThrown": false,
+          "syncErrorValue": null,
+        },
       ],
       "thrownError": null,
     }
@@ -8977,7 +9210,45 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
       "closed": false,
       "hasError": false,
       "isStopped": false,
-      "observers": Array [],
+      "observers": Array [
+        Subscriber {
+          "_parentOrParents": null,
+          "_subscriptions": Array [
+            SubjectSubscription {
+              "_parentOrParents": [Circular],
+              "_subscriptions": null,
+              "closed": false,
+              "subject": [Circular],
+              "subscriber": [Circular],
+            },
+          ],
+          "closed": false,
+          "destination": SafeSubscriber {
+            "_complete": undefined,
+            "_context": [Circular],
+            "_error": undefined,
+            "_next": [Function],
+            "_parentOrParents": null,
+            "_parentSubscriber": [Circular],
+            "_subscriptions": null,
+            "closed": false,
+            "destination": Object {
+              "closed": true,
+              "complete": [Function],
+              "error": [Function],
+              "next": [Function],
+            },
+            "isStopped": false,
+            "syncErrorThrowable": false,
+            "syncErrorThrown": false,
+            "syncErrorValue": null,
+          },
+          "isStopped": false,
+          "syncErrorThrowable": true,
+          "syncErrorThrown": false,
+          "syncErrorValue": null,
+        },
+      ],
       "thrownError": null,
     }
   }
@@ -8988,7 +9259,45 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
       "closed": false,
       "hasError": false,
       "isStopped": false,
-      "observers": Array [],
+      "observers": Array [
+        Subscriber {
+          "_parentOrParents": null,
+          "_subscriptions": Array [
+            SubjectSubscription {
+              "_parentOrParents": [Circular],
+              "_subscriptions": null,
+              "closed": false,
+              "subject": [Circular],
+              "subscriber": [Circular],
+            },
+          ],
+          "closed": false,
+          "destination": SafeSubscriber {
+            "_complete": undefined,
+            "_context": [Circular],
+            "_error": undefined,
+            "_next": [Function],
+            "_parentOrParents": null,
+            "_parentSubscriber": [Circular],
+            "_subscriptions": null,
+            "closed": false,
+            "destination": Object {
+              "closed": true,
+              "complete": [Function],
+              "error": [Function],
+              "next": [Function],
+            },
+            "isStopped": false,
+            "syncErrorThrowable": false,
+            "syncErrorThrown": false,
+            "syncErrorValue": null,
+          },
+          "isStopped": false,
+          "syncErrorThrowable": true,
+          "syncErrorThrown": false,
+          "syncErrorValue": null,
+        },
+      ],
       "thrownError": null,
     }
   }
@@ -9056,6 +9365,17 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
     BehaviorSubject {
       "_isScalar": false,
       "_value": false,
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
+      "thrownError": null,
+    }
+  }
+  globalSearchCommands$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
       "closed": false,
       "hasError": false,
       "isStopped": false,
@@ -9161,21 +9481,6 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
       "patch": [MockFunction],
       "post": [MockFunction],
       "put": [MockFunction],
-    }
-  }
-  injectedMetadata={
-    Object {
-      "getPlugins": [MockFunction] {
-        "calls": Array [
-          Array [],
-        ],
-        "results": Array [
-          Object {
-            "type": "return",
-            "value": Array [],
-          },
-        ],
-      },
     }
   }
   intl={
@@ -9639,6 +9944,17 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
       "thrownError": null,
     }
   }
+  navControlsIconSideNavFooter$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
+      "thrownError": null,
+    }
+  }
   navControlsLeft$={
     BehaviorSubject {
       "_isScalar": false,
@@ -10089,6 +10405,13 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
     }
   }
 >
+  <HeaderBanner
+    style={
+      Object {
+        "paddingRight": 648,
+      }
+    }
+  />
   <header
     className="hide-for-sharing headerGlobalNav"
     data-test-subj="headerGlobalNav"
@@ -10101,7 +10424,7 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
           className="primaryApplicationHeader newTopNavHeader"
           style={
             Object {
-              "paddingRight": 640,
+              "paddingRight": 648,
             }
           }
         >
@@ -10109,7 +10432,7 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
             className="euiHeader euiHeader--default euiHeader--static primaryApplicationHeader newTopNavHeader"
             style={
               Object {
-                "paddingRight": 640,
+                "paddingRight": 648,
               }
             }
           >
@@ -10607,7 +10930,45 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
                               "closed": false,
                               "hasError": false,
                               "isStopped": false,
-                              "observers": Array [],
+                              "observers": Array [
+                                Subscriber {
+                                  "_parentOrParents": null,
+                                  "_subscriptions": Array [
+                                    SubjectSubscription {
+                                      "_parentOrParents": [Circular],
+                                      "_subscriptions": null,
+                                      "closed": false,
+                                      "subject": [Circular],
+                                      "subscriber": [Circular],
+                                    },
+                                  ],
+                                  "closed": false,
+                                  "destination": SafeSubscriber {
+                                    "_complete": undefined,
+                                    "_context": [Circular],
+                                    "_error": undefined,
+                                    "_next": [Function],
+                                    "_parentOrParents": null,
+                                    "_parentSubscriber": [Circular],
+                                    "_subscriptions": null,
+                                    "closed": false,
+                                    "destination": Object {
+                                      "closed": true,
+                                      "complete": [Function],
+                                      "error": [Function],
+                                      "next": [Function],
+                                    },
+                                    "isStopped": false,
+                                    "syncErrorThrowable": false,
+                                    "syncErrorThrown": false,
+                                    "syncErrorValue": null,
+                                  },
+                                  "isStopped": false,
+                                  "syncErrorThrowable": true,
+                                  "syncErrorThrown": false,
+                                  "syncErrorValue": null,
+                                },
+                              ],
                               "thrownError": null,
                             }
                           }
@@ -10663,6 +11024,43 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
                                   "syncErrorThrown": false,
                                   "syncErrorValue": null,
                                 },
+                                Subscriber {
+                                  "_parentOrParents": null,
+                                  "_subscriptions": Array [
+                                    SubjectSubscription {
+                                      "_parentOrParents": [Circular],
+                                      "_subscriptions": null,
+                                      "closed": false,
+                                      "subject": [Circular],
+                                      "subscriber": [Circular],
+                                    },
+                                  ],
+                                  "closed": false,
+                                  "destination": SafeSubscriber {
+                                    "_complete": undefined,
+                                    "_context": [Circular],
+                                    "_error": undefined,
+                                    "_next": [Function],
+                                    "_parentOrParents": null,
+                                    "_parentSubscriber": [Circular],
+                                    "_subscriptions": null,
+                                    "closed": false,
+                                    "destination": Object {
+                                      "closed": true,
+                                      "complete": [Function],
+                                      "error": [Function],
+                                      "next": [Function],
+                                    },
+                                    "isStopped": false,
+                                    "syncErrorThrowable": false,
+                                    "syncErrorThrown": false,
+                                    "syncErrorValue": null,
+                                  },
+                                  "isStopped": false,
+                                  "syncErrorThrowable": true,
+                                  "syncErrorThrown": false,
+                                  "syncErrorValue": null,
+                                },
                               ],
                               "thrownError": null,
                             }
@@ -10674,7 +11072,45 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
                               "closed": false,
                               "hasError": false,
                               "isStopped": false,
-                              "observers": Array [],
+                              "observers": Array [
+                                Subscriber {
+                                  "_parentOrParents": null,
+                                  "_subscriptions": Array [
+                                    SubjectSubscription {
+                                      "_parentOrParents": [Circular],
+                                      "_subscriptions": null,
+                                      "closed": false,
+                                      "subject": [Circular],
+                                      "subscriber": [Circular],
+                                    },
+                                  ],
+                                  "closed": false,
+                                  "destination": SafeSubscriber {
+                                    "_complete": undefined,
+                                    "_context": [Circular],
+                                    "_error": undefined,
+                                    "_next": [Function],
+                                    "_parentOrParents": null,
+                                    "_parentSubscriber": [Circular],
+                                    "_subscriptions": null,
+                                    "closed": false,
+                                    "destination": Object {
+                                      "closed": true,
+                                      "complete": [Function],
+                                      "error": [Function],
+                                      "next": [Function],
+                                    },
+                                    "isStopped": false,
+                                    "syncErrorThrowable": false,
+                                    "syncErrorThrown": false,
+                                    "syncErrorValue": null,
+                                  },
+                                  "isStopped": false,
+                                  "syncErrorThrowable": true,
+                                  "syncErrorThrown": false,
+                                  "syncErrorValue": null,
+                                },
+                              ],
                               "thrownError": null,
                             }
                           }
@@ -10830,6 +11266,271 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
                     </RecentItems>
                   </div>
                 </EuiHeaderSectionItem>
+                <EuiFlexItem
+                  grow={false}
+                >
+                  <div
+                    className="euiFlexItem euiFlexItem--flexGrowZero"
+                  >
+                    <HeaderBreadcrumbs
+                      appTitle$={
+                        BehaviorSubject {
+                          "_isScalar": false,
+                          "_value": "test",
+                          "closed": false,
+                          "hasError": false,
+                          "isStopped": false,
+                          "observers": Array [
+                            Subscriber {
+                              "_parentOrParents": null,
+                              "_subscriptions": Array [
+                                SubjectSubscription {
+                                  "_parentOrParents": [Circular],
+                                  "_subscriptions": null,
+                                  "closed": false,
+                                  "subject": [Circular],
+                                  "subscriber": [Circular],
+                                },
+                              ],
+                              "closed": false,
+                              "destination": SafeSubscriber {
+                                "_complete": undefined,
+                                "_context": [Circular],
+                                "_error": undefined,
+                                "_next": [Function],
+                                "_parentOrParents": null,
+                                "_parentSubscriber": [Circular],
+                                "_subscriptions": null,
+                                "closed": false,
+                                "destination": Object {
+                                  "closed": true,
+                                  "complete": [Function],
+                                  "error": [Function],
+                                  "next": [Function],
+                                },
+                                "isStopped": false,
+                                "syncErrorThrowable": false,
+                                "syncErrorThrown": false,
+                                "syncErrorValue": null,
+                              },
+                              "isStopped": false,
+                              "syncErrorThrowable": true,
+                              "syncErrorThrown": false,
+                              "syncErrorValue": null,
+                            },
+                          ],
+                          "thrownError": null,
+                        }
+                      }
+                      breadcrumbs$={
+                        BehaviorSubject {
+                          "_isScalar": false,
+                          "_value": Array [
+                            Object {
+                              "text": "test",
+                            },
+                            Object {
+                              "text": "testTitle",
+                            },
+                          ],
+                          "closed": false,
+                          "hasError": false,
+                          "isStopped": false,
+                          "observers": Array [
+                            Subscriber {
+                              "_parentOrParents": null,
+                              "_subscriptions": Array [
+                                SubjectSubscription {
+                                  "_parentOrParents": [Circular],
+                                  "_subscriptions": null,
+                                  "closed": false,
+                                  "subject": [Circular],
+                                  "subscriber": [Circular],
+                                },
+                              ],
+                              "closed": false,
+                              "destination": SafeSubscriber {
+                                "_complete": undefined,
+                                "_context": [Circular],
+                                "_error": undefined,
+                                "_next": [Function],
+                                "_parentOrParents": null,
+                                "_parentSubscriber": [Circular],
+                                "_subscriptions": null,
+                                "closed": false,
+                                "destination": Object {
+                                  "closed": true,
+                                  "complete": [Function],
+                                  "error": [Function],
+                                  "next": [Function],
+                                },
+                                "isStopped": false,
+                                "syncErrorThrowable": false,
+                                "syncErrorThrown": false,
+                                "syncErrorValue": null,
+                              },
+                              "isStopped": false,
+                              "syncErrorThrowable": true,
+                              "syncErrorThrown": false,
+                              "syncErrorValue": null,
+                            },
+                            Subscriber {
+                              "_parentOrParents": null,
+                              "_subscriptions": Array [
+                                SubjectSubscription {
+                                  "_parentOrParents": [Circular],
+                                  "_subscriptions": null,
+                                  "closed": false,
+                                  "subject": [Circular],
+                                  "subscriber": [Circular],
+                                },
+                              ],
+                              "closed": false,
+                              "destination": SafeSubscriber {
+                                "_complete": undefined,
+                                "_context": [Circular],
+                                "_error": undefined,
+                                "_next": [Function],
+                                "_parentOrParents": null,
+                                "_parentSubscriber": [Circular],
+                                "_subscriptions": null,
+                                "closed": false,
+                                "destination": Object {
+                                  "closed": true,
+                                  "complete": [Function],
+                                  "error": [Function],
+                                  "next": [Function],
+                                },
+                                "isStopped": false,
+                                "syncErrorThrowable": false,
+                                "syncErrorThrown": false,
+                                "syncErrorValue": null,
+                              },
+                              "isStopped": false,
+                              "syncErrorThrowable": true,
+                              "syncErrorThrown": false,
+                              "syncErrorValue": null,
+                            },
+                          ],
+                          "thrownError": null,
+                        }
+                      }
+                      breadcrumbsEnricher$={
+                        BehaviorSubject {
+                          "_isScalar": false,
+                          "_value": undefined,
+                          "closed": false,
+                          "hasError": false,
+                          "isStopped": false,
+                          "observers": Array [
+                            Subscriber {
+                              "_parentOrParents": null,
+                              "_subscriptions": Array [
+                                SubjectSubscription {
+                                  "_parentOrParents": [Circular],
+                                  "_subscriptions": null,
+                                  "closed": false,
+                                  "subject": [Circular],
+                                  "subscriber": [Circular],
+                                },
+                              ],
+                              "closed": false,
+                              "destination": SafeSubscriber {
+                                "_complete": undefined,
+                                "_context": [Circular],
+                                "_error": undefined,
+                                "_next": [Function],
+                                "_parentOrParents": null,
+                                "_parentSubscriber": [Circular],
+                                "_subscriptions": null,
+                                "closed": false,
+                                "destination": Object {
+                                  "closed": true,
+                                  "complete": [Function],
+                                  "error": [Function],
+                                  "next": [Function],
+                                },
+                                "isStopped": false,
+                                "syncErrorThrowable": false,
+                                "syncErrorThrown": false,
+                                "syncErrorValue": null,
+                              },
+                              "isStopped": false,
+                              "syncErrorThrowable": true,
+                              "syncErrorThrown": false,
+                              "syncErrorValue": null,
+                            },
+                          ],
+                          "thrownError": null,
+                        }
+                      }
+                      hideTrailingSeparator={false}
+                      renderFullLength={false}
+                      useUpdatedHeader={true}
+                    >
+                      <EuiSimplifiedBreadcrumbs
+                        breadcrumbs={
+                          Array [
+                            Object {
+                              "data-test-subj": "breadcrumb first",
+                              "text": "test",
+                            },
+                            Object {
+                              "data-test-subj": "breadcrumb last",
+                              "text": "testTitle",
+                            },
+                          ]
+                        }
+                        data-test-subj="breadcrumbs"
+                        hideLastBreadCrumb={true}
+                        max={5}
+                        responsive={
+                          Object {
+                            "l": 4,
+                            "m": 1,
+                            "s": 1,
+                            "xs": 1,
+                          }
+                        }
+                        truncate={true}
+                      >
+                        <nav
+                          aria-label="breadcrumb"
+                          className="euiSimplifiedBreadcrumbs euiSimplifiedBreadcrumbs--truncate"
+                          data-test-subj="breadcrumbs"
+                        >
+                          <div
+                            className="euiSimplifiedBreadcrumbWall"
+                          >
+                            <EuiInnerText>
+                              <span
+                                aria-current="false"
+                                className="euiSimplifiedBreadcrumb"
+                                data-test-subj="breadcrumb first"
+                                title="test"
+                              >
+                                test
+                              </span>
+                            </EuiInnerText>
+                          </div>
+                          <EuiBreadcrumbSeparator>
+                            <svg
+                              className="euiBreadcrumbSeparator"
+                              preserveAspectRatio="none"
+                              viewBox="0 0 8 12"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M2 12H0L6 0h2z"
+                                fill="currentColor"
+                              />
+                            </svg>
+                          </EuiBreadcrumbSeparator>
+                        </nav>
+                      </EuiSimplifiedBreadcrumbs>
+                    </HeaderBreadcrumbs>
+                  </div>
+                </EuiFlexItem>
               </div>
             </EuiHeaderSection>
             <EuiHeaderSection
@@ -10916,6 +11617,43 @@ exports[`Header renders application header without title and breadcrumbs 1`] = `
             "hasError": false,
             "isStopped": false,
             "observers": Array [
+              Subscriber {
+                "_parentOrParents": null,
+                "_subscriptions": Array [
+                  SubjectSubscription {
+                    "_parentOrParents": [Circular],
+                    "_subscriptions": null,
+                    "closed": false,
+                    "subject": [Circular],
+                    "subscriber": [Circular],
+                  },
+                ],
+                "closed": false,
+                "destination": SafeSubscriber {
+                  "_complete": undefined,
+                  "_context": [Circular],
+                  "_error": undefined,
+                  "_next": [Function],
+                  "_parentOrParents": null,
+                  "_parentSubscriber": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "destination": Object {
+                    "closed": true,
+                    "complete": [Function],
+                    "error": [Function],
+                    "next": [Function],
+                  },
+                  "isStopped": false,
+                  "syncErrorThrowable": false,
+                  "syncErrorThrown": false,
+                  "syncErrorValue": null,
+                },
+                "isStopped": false,
+                "syncErrorThrowable": true,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
               Subscriber {
                 "_parentOrParents": null,
                 "_subscriptions": Array [
@@ -11519,6 +12257,43 @@ exports[`Header renders condensed header 1`] = `
               "syncErrorThrown": false,
               "syncErrorValue": null,
             },
+            Subscriber {
+              "_parentOrParents": null,
+              "_subscriptions": Array [
+                SubjectSubscription {
+                  "_parentOrParents": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "subject": [Circular],
+                  "subscriber": [Circular],
+                },
+              ],
+              "closed": false,
+              "destination": SafeSubscriber {
+                "_complete": undefined,
+                "_context": [Circular],
+                "_error": undefined,
+                "_next": [Function],
+                "_parentOrParents": null,
+                "_parentSubscriber": [Circular],
+                "_subscriptions": null,
+                "closed": false,
+                "destination": Object {
+                  "closed": true,
+                  "complete": [Function],
+                  "error": [Function],
+                  "next": [Function],
+                },
+                "isStopped": false,
+                "syncErrorThrowable": false,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
+              "isStopped": false,
+              "syncErrorThrowable": true,
+              "syncErrorThrown": false,
+              "syncErrorValue": null,
+            },
           ],
           "thrownError": null,
         },
@@ -12181,7 +12956,45 @@ exports[`Header renders condensed header 1`] = `
       "closed": false,
       "hasError": false,
       "isStopped": false,
-      "observers": Array [],
+      "observers": Array [
+        Subscriber {
+          "_parentOrParents": null,
+          "_subscriptions": Array [
+            SubjectSubscription {
+              "_parentOrParents": [Circular],
+              "_subscriptions": null,
+              "closed": false,
+              "subject": [Circular],
+              "subscriber": [Circular],
+            },
+          ],
+          "closed": false,
+          "destination": SafeSubscriber {
+            "_complete": undefined,
+            "_context": [Circular],
+            "_error": undefined,
+            "_next": [Function],
+            "_parentOrParents": null,
+            "_parentSubscriber": [Circular],
+            "_subscriptions": null,
+            "closed": false,
+            "destination": Object {
+              "closed": true,
+              "complete": [Function],
+              "error": [Function],
+              "next": [Function],
+            },
+            "isStopped": false,
+            "syncErrorThrowable": false,
+            "syncErrorThrown": false,
+            "syncErrorValue": null,
+          },
+          "isStopped": false,
+          "syncErrorThrowable": true,
+          "syncErrorThrown": false,
+          "syncErrorValue": null,
+        },
+      ],
       "thrownError": null,
     }
   }
@@ -12291,6 +13104,17 @@ exports[`Header renders condensed header 1`] = `
           "syncErrorValue": null,
         },
       ],
+      "thrownError": null,
+    }
+  }
+  globalSearchCommands$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
       "thrownError": null,
     }
   }
@@ -13070,21 +13894,6 @@ exports[`Header renders condensed header 1`] = `
       "put": [MockFunction],
     }
   }
-  injectedMetadata={
-    Object {
-      "getPlugins": [MockFunction] {
-        "calls": Array [
-          Array [],
-        ],
-        "results": Array [
-          Object {
-            "type": "return",
-            "value": Array [],
-          },
-        ],
-      },
-    }
-  }
   intl={
     Object {
       "defaultFormats": Object {},
@@ -13620,6 +14429,17 @@ exports[`Header renders condensed header 1`] = `
       "thrownError": null,
     }
   }
+  navControlsIconSideNavFooter$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
+      "thrownError": null,
+    }
+  }
   navControlsLeft$={
     BehaviorSubject {
       "_isScalar": false,
@@ -14031,6 +14851,13 @@ exports[`Header renders condensed header 1`] = `
     }
   }
 >
+  <HeaderBanner
+    style={
+      Object {
+        "paddingRight": 648,
+      }
+    }
+  />
   <header
     className="hide-for-sharing headerGlobalNav"
     data-test-subj="headerGlobalNav"
@@ -14043,7 +14870,7 @@ exports[`Header renders condensed header 1`] = `
         position="fixed"
         style={
           Object {
-            "paddingRight": 640,
+            "paddingRight": 648,
           }
         }
       >
@@ -14051,7 +14878,7 @@ exports[`Header renders condensed header 1`] = `
           className="euiHeader euiHeader--default euiHeader--fixed primaryHeader"
           style={
             Object {
-              "paddingRight": 640,
+              "paddingRight": 648,
             }
           }
         >
@@ -17287,6 +18114,43 @@ exports[`Header renders condensed header 1`] = `
                 "syncErrorThrown": false,
                 "syncErrorValue": null,
               },
+              Subscriber {
+                "_parentOrParents": null,
+                "_subscriptions": Array [
+                  SubjectSubscription {
+                    "_parentOrParents": [Circular],
+                    "_subscriptions": null,
+                    "closed": false,
+                    "subject": [Circular],
+                    "subscriber": [Circular],
+                  },
+                ],
+                "closed": false,
+                "destination": SafeSubscriber {
+                  "_complete": undefined,
+                  "_context": [Circular],
+                  "_error": undefined,
+                  "_next": [Function],
+                  "_parentOrParents": null,
+                  "_parentSubscriber": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "destination": Object {
+                    "closed": true,
+                    "complete": [Function],
+                    "error": [Function],
+                    "next": [Function],
+                  },
+                  "isStopped": false,
+                  "syncErrorThrowable": false,
+                  "syncErrorThrown": false,
+                  "syncErrorValue": null,
+                },
+                "isStopped": false,
+                "syncErrorThrowable": true,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
             ],
             "thrownError": null,
           },
@@ -17742,6 +18606,43 @@ exports[`Header renders page header with application title 1`] = `
           "hasError": false,
           "isStopped": false,
           "observers": Array [
+            Subscriber {
+              "_parentOrParents": null,
+              "_subscriptions": Array [
+                SubjectSubscription {
+                  "_parentOrParents": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "subject": [Circular],
+                  "subscriber": [Circular],
+                },
+              ],
+              "closed": false,
+              "destination": SafeSubscriber {
+                "_complete": undefined,
+                "_context": [Circular],
+                "_error": undefined,
+                "_next": [Function],
+                "_parentOrParents": null,
+                "_parentSubscriber": [Circular],
+                "_subscriptions": null,
+                "closed": false,
+                "destination": Object {
+                  "closed": true,
+                  "complete": [Function],
+                  "error": [Function],
+                  "next": [Function],
+                },
+                "isStopped": false,
+                "syncErrorThrowable": false,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
+              "isStopped": false,
+              "syncErrorThrowable": true,
+              "syncErrorThrown": false,
+              "syncErrorValue": null,
+            },
             Subscriber {
               "_parentOrParents": null,
               "_subscriptions": Array [
@@ -18487,7 +19388,45 @@ exports[`Header renders page header with application title 1`] = `
       "closed": false,
       "hasError": false,
       "isStopped": false,
-      "observers": Array [],
+      "observers": Array [
+        Subscriber {
+          "_parentOrParents": null,
+          "_subscriptions": Array [
+            SubjectSubscription {
+              "_parentOrParents": [Circular],
+              "_subscriptions": null,
+              "closed": false,
+              "subject": [Circular],
+              "subscriber": [Circular],
+            },
+          ],
+          "closed": false,
+          "destination": SafeSubscriber {
+            "_complete": undefined,
+            "_context": [Circular],
+            "_error": undefined,
+            "_next": [Function],
+            "_parentOrParents": null,
+            "_parentSubscriber": [Circular],
+            "_subscriptions": null,
+            "closed": false,
+            "destination": Object {
+              "closed": true,
+              "complete": [Function],
+              "error": [Function],
+              "next": [Function],
+            },
+            "isStopped": false,
+            "syncErrorThrowable": false,
+            "syncErrorThrown": false,
+            "syncErrorValue": null,
+          },
+          "isStopped": false,
+          "syncErrorThrowable": true,
+          "syncErrorThrown": false,
+          "syncErrorValue": null,
+        },
+      ],
       "thrownError": null,
     }
   }
@@ -18555,6 +19494,17 @@ exports[`Header renders page header with application title 1`] = `
     BehaviorSubject {
       "_isScalar": false,
       "_value": false,
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
+      "thrownError": null,
+    }
+  }
+  globalSearchCommands$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
       "closed": false,
       "hasError": false,
       "isStopped": false,
@@ -18660,21 +19610,6 @@ exports[`Header renders page header with application title 1`] = `
       "patch": [MockFunction],
       "post": [MockFunction],
       "put": [MockFunction],
-    }
-  }
-  injectedMetadata={
-    Object {
-      "getPlugins": [MockFunction] {
-        "calls": Array [
-          Array [],
-        ],
-        "results": Array [
-          Object {
-            "type": "return",
-            "value": Array [],
-          },
-        ],
-      },
     }
   }
   intl={
@@ -19138,6 +20073,17 @@ exports[`Header renders page header with application title 1`] = `
       "thrownError": null,
     }
   }
+  navControlsIconSideNavFooter$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
+      "thrownError": null,
+    }
+  }
   navControlsLeft$={
     BehaviorSubject {
       "_isScalar": false,
@@ -19588,6 +20534,13 @@ exports[`Header renders page header with application title 1`] = `
     }
   }
 >
+  <HeaderBanner
+    style={
+      Object {
+        "paddingRight": 648,
+      }
+    }
+  />
   <header
     className="hide-for-sharing headerGlobalNav"
     data-test-subj="headerGlobalNav"
@@ -19598,7 +20551,7 @@ exports[`Header renders page header with application title 1`] = `
       <div
         style={
           Object {
-            "paddingRight": 640,
+            "paddingRight": 648,
           }
         }
       >
@@ -20635,69 +21588,74 @@ exports[`Header renders page header with application title 1`] = `
               renderFullLength={false}
               useUpdatedHeader={true}
             >
-              <EuiHeaderBreadcrumbs
+              <EuiSimplifiedBreadcrumbs
                 breadcrumbs={
                   Array [
                     Object {
                       "data-test-subj": "breadcrumb first",
                       "text": "test",
                     },
+                    Object {
+                      "data-test-subj": "breadcrumb last",
+                      "text": "testTitle",
+                    },
                   ]
                 }
                 data-test-subj="breadcrumbs"
-                max={10}
-                simplify={true}
-              >
-                <EuiSimplifiedBreadcrumbs
-                  breadcrumbs={
-                    Array [
-                      Object {
-                        "data-test-subj": "breadcrumb first",
-                        "text": "test",
-                      },
-                    ]
+                hideLastBreadCrumb={true}
+                max={5}
+                responsive={
+                  Object {
+                    "l": 4,
+                    "m": 1,
+                    "s": 1,
+                    "xs": 1,
                   }
-                  className="euiHeaderBreadcrumbs euiHeaderBreadcrumbs--simplified"
+                }
+                truncate={true}
+              >
+                <nav
+                  aria-label="breadcrumb"
+                  className="euiSimplifiedBreadcrumbs euiSimplifiedBreadcrumbs--truncate"
                   data-test-subj="breadcrumbs"
-                  max={10}
-                  truncate={true}
                 >
-                  <nav
-                    aria-label="breadcrumb"
-                    className="euiSimplifiedBreadcrumbs euiHeaderBreadcrumbs euiHeaderBreadcrumbs--simplified euiSimplifiedBreadcrumbs--truncate"
-                    data-test-subj="breadcrumbs"
+                  <div
+                    className="euiSimplifiedBreadcrumbWall"
                   >
-                    <div
-                      className="euiSimplifiedBreadcrumbWall euiSimplifiedBreadcrumbWall--single"
-                    >
-                      <EuiInnerText>
-                        <span
-                          aria-current="page"
-                          className="euiSimplifiedBreadcrumb euiSimplifiedBreadcrumb--last"
-                          data-test-subj="breadcrumb first"
-                          title="test"
-                        >
-                          test
-                        </span>
-                      </EuiInnerText>
-                    </div>
-                    <EuiBreadcrumbSeparator>
-                      <svg
-                        className="euiBreadcrumbSeparator"
-                        preserveAspectRatio="none"
-                        viewBox="0 0 8 12"
-                        xmlns="http://www.w3.org/2000/svg"
+                    <EuiInnerText>
+                      <span
+                        aria-current="false"
+                        className="euiSimplifiedBreadcrumb"
+                        data-test-subj="breadcrumb first"
+                        title="test"
                       >
-                        <path
-                          d="M2 12H0L6 0h2z"
-                          fill="currentColor"
-                        />
-                      </svg>
-                    </EuiBreadcrumbSeparator>
-                  </nav>
-                </EuiSimplifiedBreadcrumbs>
-              </EuiHeaderBreadcrumbs>
+                        test
+                      </span>
+                    </EuiInnerText>
+                  </div>
+                  <EuiBreadcrumbSeparator>
+                    <svg
+                      className="euiBreadcrumbSeparator"
+                      preserveAspectRatio="none"
+                      viewBox="0 0 8 12"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M2 12H0L6 0h2z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </EuiBreadcrumbSeparator>
+                </nav>
+              </EuiSimplifiedBreadcrumbs>
             </HeaderBreadcrumbs>
+            <EuiHeaderSection
+              grow={true}
+            >
+              <div
+                className="euiHeaderSection euiHeaderSection--grow euiHeaderSection--left"
+              />
+            </EuiHeaderSection>
             <EuiHeaderSectionItem
               border="none"
             >
@@ -20992,6 +21950,43 @@ exports[`Header renders page header with application title 1`] = `
             "hasError": false,
             "isStopped": false,
             "observers": Array [
+              Subscriber {
+                "_parentOrParents": null,
+                "_subscriptions": Array [
+                  SubjectSubscription {
+                    "_parentOrParents": [Circular],
+                    "_subscriptions": null,
+                    "closed": false,
+                    "subject": [Circular],
+                    "subscriber": [Circular],
+                  },
+                ],
+                "closed": false,
+                "destination": SafeSubscriber {
+                  "_complete": undefined,
+                  "_context": [Circular],
+                  "_error": undefined,
+                  "_next": [Function],
+                  "_parentOrParents": null,
+                  "_parentSubscriber": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "destination": Object {
+                    "closed": true,
+                    "complete": [Function],
+                    "error": [Function],
+                    "next": [Function],
+                  },
+                  "isStopped": false,
+                  "syncErrorThrowable": false,
+                  "syncErrorThrown": false,
+                  "syncErrorValue": null,
+                },
+                "isStopped": false,
+                "syncErrorThrowable": true,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
               Subscriber {
                 "_parentOrParents": null,
                 "_subscriptions": Array [
@@ -21558,6 +22553,43 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
           "hasError": false,
           "isStopped": false,
           "observers": Array [
+            Subscriber {
+              "_parentOrParents": null,
+              "_subscriptions": Array [
+                SubjectSubscription {
+                  "_parentOrParents": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "subject": [Circular],
+                  "subscriber": [Circular],
+                },
+              ],
+              "closed": false,
+              "destination": SafeSubscriber {
+                "_complete": undefined,
+                "_context": [Circular],
+                "_error": undefined,
+                "_next": [Function],
+                "_parentOrParents": null,
+                "_parentSubscriber": [Circular],
+                "_subscriptions": null,
+                "closed": false,
+                "destination": Object {
+                  "closed": true,
+                  "complete": [Function],
+                  "error": [Function],
+                  "next": [Function],
+                },
+                "isStopped": false,
+                "syncErrorThrowable": false,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
+              "isStopped": false,
+              "syncErrorThrowable": true,
+              "syncErrorThrown": false,
+              "syncErrorValue": null,
+            },
             Subscriber {
               "_parentOrParents": null,
               "_subscriptions": Array [
@@ -22257,7 +23289,45 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
       "closed": false,
       "hasError": false,
       "isStopped": false,
-      "observers": Array [],
+      "observers": Array [
+        Subscriber {
+          "_parentOrParents": null,
+          "_subscriptions": Array [
+            SubjectSubscription {
+              "_parentOrParents": [Circular],
+              "_subscriptions": null,
+              "closed": false,
+              "subject": [Circular],
+              "subscriber": [Circular],
+            },
+          ],
+          "closed": false,
+          "destination": SafeSubscriber {
+            "_complete": undefined,
+            "_context": [Circular],
+            "_error": undefined,
+            "_next": [Function],
+            "_parentOrParents": null,
+            "_parentSubscriber": [Circular],
+            "_subscriptions": null,
+            "closed": false,
+            "destination": Object {
+              "closed": true,
+              "complete": [Function],
+              "error": [Function],
+              "next": [Function],
+            },
+            "isStopped": false,
+            "syncErrorThrowable": false,
+            "syncErrorThrown": false,
+            "syncErrorValue": null,
+          },
+          "isStopped": false,
+          "syncErrorThrowable": true,
+          "syncErrorThrown": false,
+          "syncErrorValue": null,
+        },
+      ],
       "thrownError": null,
     }
   }
@@ -22367,6 +23437,17 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
           "syncErrorValue": null,
         },
       ],
+      "thrownError": null,
+    }
+  }
+  globalSearchCommands$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
       "thrownError": null,
     }
   }
@@ -23146,26 +24227,6 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
       "put": [MockFunction],
     }
   }
-  injectedMetadata={
-    Object {
-      "getPlugins": [MockFunction] {
-        "calls": Array [
-          Array [],
-          Array [],
-        ],
-        "results": Array [
-          Object {
-            "type": "return",
-            "value": Array [],
-          },
-          Object {
-            "type": "return",
-            "value": Array [],
-          },
-        ],
-      },
-    }
-  }
   intl={
     Object {
       "defaultFormats": Object {},
@@ -23701,6 +24762,17 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
       "thrownError": null,
     }
   }
+  navControlsIconSideNavFooter$={
+    BehaviorSubject {
+      "_isScalar": false,
+      "_value": Array [],
+      "closed": false,
+      "hasError": false,
+      "isStopped": false,
+      "observers": Array [],
+      "thrownError": null,
+    }
+  }
   navControlsLeft$={
     BehaviorSubject {
       "_isScalar": false,
@@ -24112,6 +25184,13 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
     }
   }
 >
+  <HeaderBanner
+    style={
+      Object {
+        "paddingRight": 648,
+      }
+    }
+  />
   <header
     className="hide-for-sharing headerGlobalNav"
     data-test-subj="headerGlobalNav"
@@ -24124,7 +25203,7 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
         position="fixed"
         style={
           Object {
-            "paddingRight": 640,
+            "paddingRight": 648,
           }
         }
       >
@@ -24132,7 +25211,7 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
           className="euiHeader euiHeader--default euiHeader--fixed primaryHeader"
           style={
             Object {
-              "paddingRight": 640,
+              "paddingRight": 648,
             }
           }
         >
@@ -27331,6 +28410,43 @@ exports[`Header toggles primary navigation menu when clicked 1`] = `
             "hasError": false,
             "isStopped": false,
             "observers": Array [
+              Subscriber {
+                "_parentOrParents": null,
+                "_subscriptions": Array [
+                  SubjectSubscription {
+                    "_parentOrParents": [Circular],
+                    "_subscriptions": null,
+                    "closed": false,
+                    "subject": [Circular],
+                    "subscriber": [Circular],
+                  },
+                ],
+                "closed": false,
+                "destination": SafeSubscriber {
+                  "_complete": undefined,
+                  "_context": [Circular],
+                  "_error": undefined,
+                  "_next": [Function],
+                  "_parentOrParents": null,
+                  "_parentSubscriber": [Circular],
+                  "_subscriptions": null,
+                  "closed": false,
+                  "destination": Object {
+                    "closed": true,
+                    "complete": [Function],
+                    "error": [Function],
+                    "next": [Function],
+                  },
+                  "isStopped": false,
+                  "syncErrorThrowable": false,
+                  "syncErrorThrown": false,
+                  "syncErrorValue": null,
+                },
+                "isStopped": false,
+                "syncErrorThrowable": true,
+                "syncErrorThrown": false,
+                "syncErrorValue": null,
+              },
               Subscriber {
                 "_parentOrParents": null,
                 "_subscriptions": Array [

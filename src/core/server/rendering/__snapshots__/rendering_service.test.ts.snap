@@ -17,6 +17,7 @@ Object {
   "csp": Object {
     "warnLegacyBrowsers": true,
   },
+  "enableIconSideNav": false,
   "env": Object {
     "mode": Object {
       "dev": Any<Boolean>,
@@ -33,6 +34,9 @@ Object {
   },
   "i18n": Object {
     "translationsUrl": "/mock-server-basepath/translations/en.json",
+  },
+  "keyboardShortcuts": Object {
+    "enabled": true,
   },
   "legacyMetadata": Object {
     "uiSettings": Object {
@@ -69,6 +73,7 @@ Object {
   "csp": Object {
     "warnLegacyBrowsers": true,
   },
+  "enableIconSideNav": false,
   "env": Object {
     "mode": Object {
       "dev": Any<Boolean>,
@@ -85,6 +90,9 @@ Object {
   },
   "i18n": Object {
     "translationsUrl": "/mock-server-basepath/translations/en.json",
+  },
+  "keyboardShortcuts": Object {
+    "enabled": true,
   },
   "legacyMetadata": Object {
     "uiSettings": Object {
@@ -121,6 +129,7 @@ Object {
   "csp": Object {
     "warnLegacyBrowsers": true,
   },
+  "enableIconSideNav": false,
   "env": Object {
     "mode": Object {
       "dev": Any<Boolean>,
@@ -137,6 +146,9 @@ Object {
   },
   "i18n": Object {
     "translationsUrl": "/mock-server-basepath/translations/en.json",
+  },
+  "keyboardShortcuts": Object {
+    "enabled": true,
   },
   "legacyMetadata": Object {
     "uiSettings": Object {
@@ -173,6 +185,7 @@ Object {
   "csp": Object {
     "warnLegacyBrowsers": true,
   },
+  "enableIconSideNav": false,
   "env": Object {
     "mode": Object {
       "dev": Any<Boolean>,
@@ -189,6 +202,9 @@ Object {
   },
   "i18n": Object {
     "translationsUrl": "/mock-server-basepath/translations/en.json",
+  },
+  "keyboardShortcuts": Object {
+    "enabled": true,
   },
   "legacyMetadata": Object {
     "uiSettings": Object {
@@ -229,6 +245,7 @@ Object {
   "csp": Object {
     "warnLegacyBrowsers": true,
   },
+  "enableIconSideNav": false,
   "env": Object {
     "mode": Object {
       "dev": Any<Boolean>,
@@ -245,6 +262,9 @@ Object {
   },
   "i18n": Object {
     "translationsUrl": "/translations/en.json",
+  },
+  "keyboardShortcuts": Object {
+    "enabled": true,
   },
   "legacyMetadata": Object {
     "uiSettings": Object {
@@ -281,6 +301,7 @@ Object {
   "csp": Object {
     "warnLegacyBrowsers": true,
   },
+  "enableIconSideNav": false,
   "env": Object {
     "mode": Object {
       "dev": Any<Boolean>,
@@ -297,6 +318,9 @@ Object {
   },
   "i18n": Object {
     "translationsUrl": "/mock-server-basepath/translations/en.json",
+  },
+  "keyboardShortcuts": Object {
+    "enabled": true,
   },
   "legacyMetadata": Object {
     "uiSettings": Object {
@@ -333,6 +357,7 @@ Object {
   "csp": Object {
     "warnLegacyBrowsers": true,
   },
+  "enableIconSideNav": false,
   "env": Object {
     "mode": Object {
       "dev": Any<Boolean>,
@@ -349,6 +374,9 @@ Object {
   },
   "i18n": Object {
     "translationsUrl": "/mock-server-basepath/translations/en.json",
+  },
+  "keyboardShortcuts": Object {
+    "enabled": true,
   },
   "legacyMetadata": Object {
     "uiSettings": Object {

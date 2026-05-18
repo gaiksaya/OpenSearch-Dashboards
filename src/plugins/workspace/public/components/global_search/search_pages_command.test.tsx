@@ -203,4 +203,41 @@ describe('<workspaceSearchPagesCommand />', () => {
     expect(coreStartMock.application.navigateToApp).not.toBeCalled();
     expect(window.location.assign).toBeCalledWith(testUrl);
   });
+
+  it('search click callback with system link and basePath should use window assign correctly', async () => {
+    const mockAssign = jest.fn();
+
+    const originalBasePath = coreStartMock.http.basePath;
+    const basePath = '/foo';
+    // @ts-expect-error TS2341, TS2540 TODO(ts-error): fixme
+    coreStartMock.http.basePath.basePath = basePath;
+
+    Object.defineProperty(window, 'location', {
+      value: { assign: mockAssign },
+      writable: true,
+    });
+
+    const testUrl = `http://localhost:5601${basePath}/app/test`;
+
+    const searchResult = await workspaceSearchPages(
+      'Settings',
+      registeredUseCases,
+      coreStartMock,
+      callbackFn
+    );
+
+    (searchResult[0] as any).props?.onCallback({
+      navGroup: {
+        type: 'system',
+      },
+      href: testUrl,
+      id: 'test',
+    });
+
+    expect(coreStartMock.application.navigateToApp).not.toBeCalled();
+    expect(window.location.assign).toBeCalledWith(testUrl);
+
+    // @ts-expect-error TS2341, TS2540 TODO(ts-error): fixme
+    coreStartMock.http.basePath.basePath = originalBasePath;
+  });
 });

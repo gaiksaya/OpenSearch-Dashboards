@@ -38,6 +38,8 @@ import { UI_SETTINGS } from '../../../common';
 
 type SerializedSavedQueryAttributes = SavedObjectAttributes & SavedQueryAttributes;
 
+const unregisteredLangServiceApps = ['explore'];
+
 export const createSavedQueryService = (
   savedObjectsClient: SavedObjectsClientContract,
   coreStartServices: { application: CoreStart['application']; uiSettings: CoreStart['uiSettings'] },
@@ -48,7 +50,6 @@ export const createSavedQueryService = (
 
   const saveQuery = async (attributes: SavedQueryAttributes, { overwrite = false } = {}) => {
     if (!attributes.title.length) {
-      // title is required extra check against circumventing the front end
       throw new Error('Cannot create saved query without a title');
     }
 
@@ -136,8 +137,15 @@ export const createSavedQueryService = (
     const currentAppId = (await application?.currentAppId$?.pipe(first()).toPromise()) ?? undefined;
     const languageService = queryStringManager?.getLanguageService();
 
-    // Filtering saved queries based on language supported by cirrent application
-    if (currentAppId && languageService) {
+    // Filtering saved queries based on language supported by current application
+    // Skip filtering for apps not using lang service eg. explore new editor
+    if (
+      currentAppId &&
+      languageService &&
+      !unregisteredLangServiceApps.some((unregisteredApp) =>
+        currentAppId.startsWith(unregisteredApp)
+      )
+    ) {
       queries = queries.filter((query) => {
         const languageId = query.attributes.query.language;
         return (
@@ -166,13 +174,18 @@ export const createSavedQueryService = (
   };
 
   const parseSavedQueryObject = (savedQuery: SavedQuery) => {
-    const queryString = savedQuery.attributes.query.query as string;
+    const queryString = savedQuery.attributes.query?.query as string | undefined;
     let parsedQuery;
     try {
+      // @ts-expect-error TS2345 TODO(ts-error): fixme
       parsedQuery = JSON.parse(queryString);
       parsedQuery = isObject(parsedQuery) ? parsedQuery : queryString;
     } catch (error) {
       parsedQuery = queryString;
+    }
+
+    if (parsedQuery === null || parsedQuery === undefined) {
+      parsedQuery = '';
     }
 
     const savedQueryItem: SavedQueryAttributes = {

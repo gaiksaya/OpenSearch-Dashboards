@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import fs from 'fs';
 import { defineConfig } from 'cypress';
 import webpackPreprocessor from '@cypress/webpack-preprocessor';
-// TODO: import { paste } from 'copy-paste';
 
 module.exports = defineConfig({
   experimentalMemoryManagement: true,
@@ -19,6 +19,12 @@ module.exports = defineConfig({
   },
   viewportWidth: 1920,
   viewportHeight: 1080,
+  video: true,
+  videoCompression: false,
+  trashAssetsBeforeRuns: false,
+  videosFolder: 'cypress/videos',
+  screenshotsFolder: 'cypress/screenshots',
+
   env: {
     ENGINE: {
       name: 'default',
@@ -34,6 +40,10 @@ module.exports = defineConfig({
       username: process.env.S3_CONNECTION_USERNAME,
       password: process.env.S3_CONNECTION_PASSWORD,
     },
+    PROMETHEUS: {
+      name: 'test-prometheus',
+      url: process.env.PROMETHEUS_CONNECTION_URL,
+    },
     openSearchUrl: 'http://localhost:9200',
     SECURITY_ENABLED: false,
     AGGREGATION_VIEW: false,
@@ -46,6 +56,7 @@ module.exports = defineConfig({
     ML_COMMONS_DASHBOARDS_ENABLED: true,
     WAIT_FOR_LOADER_BUFFER_MS: 0,
     WAIT_MS: 2000,
+    WAIT_MS_LONG: 10000,
     DISABLE_LOCAL_CLUSTER: false,
     CYPRESS_RUNTIME_ENV: 'osd',
   },
@@ -54,6 +65,7 @@ module.exports = defineConfig({
     specPattern: 'cypress/integration/**/*.spec.{js,jsx,ts,tsx}',
     testIsolation: false,
     setupNodeEvents,
+    chromeWebSecurity: false,
   },
 });
 
@@ -63,6 +75,12 @@ function setupNodeEvents(
 ): Cypress.PluginConfigOptions {
   const { webpackOptions } = webpackPreprocessor.defaultOptions;
 
+  // Fix: Error: Webpack Compilation Error
+  // Module not found: Error: Can't resolve 'path'
+  webpackOptions!.plugins = webpackOptions!.plugins || [];
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  webpackOptions!.plugins.push(new (require('node-polyfill-webpack-plugin'))());
+
   /**
    * By default, cypress' internal webpack preprocessor doesn't allow imports without file extensions.
    * This makes our life a bit hard since if any file in our testing dependency graph has an import without
@@ -71,10 +89,33 @@ function setupNodeEvents(
    * This extra rule relaxes this a bit by allowing imports without file extension
    *     ex. import module from './module'
    */
+  // @ts-expect-error TODO FIX ME
   webpackOptions!.module!.rules.unshift({
     test: /\.m?js/,
     resolve: {
-      enforceExtension: false,
+      fullySpecified: false,
+    },
+  });
+
+  /**
+   * Add babel-loader to handle modern JavaScript syntax like optional chaining
+   */
+  // @ts-expect-error TODO FIX ME
+  webpackOptions!.module!.rules.push({
+    test: /\.(js|ts)$/,
+    exclude: /node_modules/,
+    use: {
+      loader: 'babel-loader',
+      options: {
+        presets: [
+          ['@babel/preset-env', { targets: { node: 'current' } }],
+          '@babel/preset-typescript',
+        ],
+        plugins: [
+          '@babel/plugin-proposal-optional-chaining',
+          '@babel/plugin-proposal-nullish-coalescing-operator',
+        ],
+      },
     },
   });
 
@@ -84,12 +125,19 @@ function setupNodeEvents(
       webpackOptions,
     })
   );
-  // TODO: Define the custom task to read clipboard
-  /* on('task', {
-    readClipboard() {
-      return paste(); // Return the clipboard content
-    },
-  });*/
+
+  // Delete video files for specs where all tests passed.
+  // Keeps compressed videos only for failures to aid debugging.
+  on('after:spec', (spec: Cypress.Spec, results: CypressCommandLine.RunResult) => {
+    if (results && results.video) {
+      const hasFailures = results.tests?.some((test) =>
+        test.attempts?.some((attempt) => attempt.state === 'failed')
+      );
+      if (!hasFailures) {
+        fs.unlinkSync(results.video);
+      }
+    }
+  });
 
   return config;
 }

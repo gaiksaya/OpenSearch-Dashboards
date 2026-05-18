@@ -4,12 +4,11 @@
  */
 
 import React from 'react';
-import { createLineConfig, LineChartStyleControls } from './line_vis_config';
+import { createLineConfig } from './line_vis_config';
 import { LineVisStyleControls } from './line_vis_options';
-import { Positions } from '../utils/collections';
-import { CategoryAxis, GridOptions, ThresholdLineStyle, ValueAxis } from '../types';
+import { GridOptions, ThresholdMode, Positions, TooltipOptions } from '../types';
+import { LineStyle } from './line_exclusive_vis_options';
 
-// Mock the React.createElement function
 jest.mock('react', () => ({
   ...jest.requireActual('react'),
   createElement: jest.fn(),
@@ -24,8 +23,7 @@ describe('line_vis_config', () => {
     it('should create a line visualization type configuration', () => {
       const config = createLineConfig();
 
-      // Verify the basic structure
-      expect(config).toHaveProperty('name', 'line');
+      expect(config).toHaveProperty('name', 'Line');
       expect(config).toHaveProperty('type', 'line');
       expect(config).toHaveProperty('ui.style.defaults');
       expect(config).toHaveProperty('ui.style.render');
@@ -33,78 +31,68 @@ describe('line_vis_config', () => {
 
     it('should have the correct default style settings', () => {
       const config = createLineConfig();
-      const defaults = config.ui.style.defaults as LineChartStyleControls;
+      const defaults = config.ui.style.defaults;
 
-      // Verify basic controls
-      expect(defaults.addTooltip).toBe(true);
       expect(defaults.addLegend).toBe(true);
-      expect(defaults.legendPosition).toBe(Positions.RIGHT);
+      expect(defaults.legendPosition).toBe(Positions.BOTTOM);
       expect(defaults.addTimeMarker).toBe(false);
 
-      // Verify line style
-      expect(defaults.showLine).toBe(true);
-      expect(defaults.lineMode).toBe('smooth');
+      expect(defaults.lineStyle).toBe('line');
+      expect(defaults.lineMode).toBe('straight');
       expect(defaults.lineWidth).toBe(2);
-      expect(defaults.showDots).toBe(true);
 
-      // Verify threshold settings
-      expect(defaults.thresholdLine).toEqual({
-        color: '#E7664C',
-        show: false,
-        style: ThresholdLineStyle.Full,
-        value: 10,
-        width: 1,
+      expect(defaults.tooltipOptions).toEqual({
+        mode: 'all',
       });
 
-      // Verify grid settings
-      expect(defaults.grid).toEqual({
-        categoryLines: true,
-        valueLines: true,
+      expect(defaults.thresholdOptions).toMatchObject({
+        baseColor: '#00BD6B',
+        thresholds: [],
+        thresholdStyle: ThresholdMode.Off,
       });
+    });
 
-      // Verify axes
-      expect(defaults.categoryAxes).toHaveLength(1);
-      expect(defaults.categoryAxes[0]).toHaveProperty('position', Positions.BOTTOM);
-      expect(defaults.valueAxes).toHaveLength(1);
-      expect(defaults.valueAxes[0]).toHaveProperty('position', Positions.LEFT);
+    it('should have getRules configured', () => {
+      const config = createLineConfig();
+
+      expect(typeof config.getRules).toBe('function');
+      const rules = config.getRules();
+      expect(Array.isArray(rules)).toBe(true);
+      expect(rules.length).toBeGreaterThan(0);
     });
 
     it('should render the LineVisStyleControls component with the provided props', () => {
       const config = createLineConfig();
       const renderFunction = config.ui.style.render;
 
-      // Mock props
       const mockProps = {
         styleOptions: {
-          addTooltip: true,
           addLegend: true,
           legendPosition: Positions.RIGHT,
-          thresholdLine: {
-            show: false,
-            value: 100,
-            color: 'red',
-            width: 1,
-            style: ThresholdLineStyle.Dashed,
+          thresholdOptions: {
+            baseColor: '#00BD6B',
+            thresholds: [],
+            thresholdStyle: ThresholdMode.Solid,
           },
           addTimeMarker: false,
-          showLine: true,
-          lineMode: '',
+          lineStyle: 'both' as LineStyle,
+          lineMode: 'smooth' as const,
           lineWidth: 1,
-          showDots: true,
+          tooltipOptions: { mode: 'all' } as TooltipOptions,
           grid: {} as GridOptions,
-          categoryAxes: [] as CategoryAxis[],
-          valueAxes: [] as ValueAxis[],
+          standardAxes: [],
+          showFullTimeRange: false,
         },
         onStyleChange: jest.fn(),
         numericalColumns: [],
         categoricalColumns: [],
         dateColumns: [],
+        axisColumnMappings: {},
+        updateVisualization: jest.fn(),
       };
 
-      // Call the render function
       renderFunction(mockProps);
 
-      // Verify that React.createElement was called with the correct arguments
       expect(React.createElement).toHaveBeenCalledWith(LineVisStyleControls, mockProps);
     });
   });

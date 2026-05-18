@@ -9,201 +9,106 @@
  * GitHub history for details.
  */
 
-import { EuiFlexGroup, EuiFlexItem, EuiIcon, EuiSmallButtonIcon } from '@elastic/eui';
-import { i18n } from '@osd/i18n';
-import dompurify from 'dompurify';
-import React, { useCallback, useState } from 'react';
-import { IndexPattern } from 'src/plugins/data/public';
-import { TableSourceCell } from '../tabe_cell/table_source_cell';
-import { TableCell } from '../tabe_cell/table_cell';
+import React, { useCallback, useState, useMemo } from 'react';
+import { IndexPattern, DataView as Dataset } from 'src/plugins/data/public';
 import {
   DocViewFilterFn,
   DocViewsRegistry,
   OpenSearchSearchHit,
 } from '../../../types/doc_views_types';
-import { DocViewer } from '../../doc_viewer/doc_viewer';
+import { ExploreServices } from '../../../types';
+import { useOpenSearchDashboards } from '../../../../../opensearch_dashboards_react/public';
+import { ExpandedTableRow } from './expanded_table_row/expanded_table_row';
+import { TableRowContent } from './table_row_content';
+import { isOnTracesPage } from '../table_cell/trace_utils/trace_utils';
+
+// Create stable NOOP hook reference outside component to avoid re-renders
+const NOOP_DYNAMIC_CONTEXT_HOOK = (options?: any, _shouldCleanup?: boolean): string => '';
 
 export interface TableRowProps {
   row: OpenSearchSearchHit<Record<string, unknown>>;
+  index?: number;
   columns: string[];
-  indexPattern: IndexPattern;
+  dataset: IndexPattern | Dataset;
   onRemoveColumn?: (column: string) => void;
   onAddColumn?: (column: string) => void;
   onFilter?: DocViewFilterFn;
   onClose?: () => void;
   isShortDots: boolean;
   docViewsRegistry: DocViewsRegistry;
+  expandedTableHeader?: string;
+  wrapCellText?: boolean;
 }
 
 export const TableRowUI = ({
   row,
+  index,
   columns,
-  indexPattern,
+  dataset,
   onFilter,
   onRemoveColumn,
   onAddColumn,
   onClose,
   isShortDots,
   docViewsRegistry,
+  expandedTableHeader,
+  wrapCellText,
 }: TableRowProps) => {
-  const flattened = indexPattern.flattenHit(row);
+  const { services } = useOpenSearchDashboards<ExploreServices>();
   const [isExpanded, setIsExpanded] = useState(false);
   const handleExpanding = useCallback(() => setIsExpanded((prevState) => !prevState), [
     setIsExpanded,
   ]);
 
-  const tableRow = (
-    <tr key={row._id} className={row.isAnchor ? 'exploreDocTable__row--highlight' : ''}>
-      <td
-        data-test-subj="docTableExpandToggleColumn"
-        className="exploreDocTableCell__toggleDetails"
-      >
-        <EuiSmallButtonIcon
-          color="text"
-          onClick={handleExpanding}
-          iconType={isExpanded ? 'arrowDown' : 'arrowRight'}
-          aria-label={i18n.translate('explore.defaultTable.docTableExpandToggleColumnLabel', {
-            defaultMessage: `Toggle row details`,
-          })}
-          data-test-subj="docTableExpandToggleColumn"
-        />
-      </td>
-      {columns.map((colName) => {
-        const fieldInfo = indexPattern.fields.getByName(colName);
-        const fieldMapping = flattened[colName];
+  const expandedContext = useMemo(() => {
+    if (!isExpanded) return null;
 
-        if (typeof row === 'undefined') {
-          return (
-            <td
-              key={colName}
-              data-test-subj="docTableField"
-              className="exploreDocTableCell eui-textBreakAll eui-textBreakWord"
-            >
-              <span>-</span>
-            </td>
-          );
-        }
+    // Create unique ID for this document expansion
+    const documentId = row._id || `row-${index}`;
 
-        if (fieldInfo?.type === '_source') {
-          return (
-            <td
-              key={colName}
-              className="exploreDocTableCell eui-textBreakAll eui-textBreakWord exploreDocTableCell__source"
-              data-test-subj="docTableField"
-            >
-              <div className="truncate-by-height">
-                <TableSourceCell idxPattern={indexPattern} row={row} isShortDots={isShortDots} />
-              </div>
-            </td>
-          );
-        }
+    return {
+      id: `document-expansion-${documentId}`,
+      description: `Expanded row ${index !== undefined ? index + 1 : 'Entry'} from data table`,
+      value: row._source,
+      label: `Row ${index !== undefined ? index + 1 : 'Entry'}`,
+      categories: ['explore', 'chat', 'dynamic'],
+    };
+  }, [isExpanded, index, row._source, row._id]);
 
-        const formattedValue = indexPattern.formatField(row, colName);
+  // Register dynamic context when row is expanded
+  const useDynamicContext =
+    services.contextProvider?.hooks?.useDynamicContext || NOOP_DYNAMIC_CONTEXT_HOOK;
+  useDynamicContext(expandedContext);
 
-        if (typeof formattedValue === 'undefined') {
-          return (
-            <td
-              key={colName}
-              data-test-subj="docTableField"
-              className="exploreDocTableCell eui-textBreakAll eui-textBreakWord"
-            >
-              <span>-</span>
-            </td>
-          );
-        }
-
-        const sanitizedCellValue = dompurify.sanitize(formattedValue);
-
-        if (!fieldInfo?.filterable) {
-          return (
-            <td
-              key={colName}
-              data-test-subj="docTableField"
-              className={`exploreDocTableCell ${
-                indexPattern.timeFieldName === colName
-                  ? 'eui-textNoWrap'
-                  : 'eui-textBreakAll eui-textBreakWord'
-              }`}
-            >
-              <div className="truncate-by-height">
-                {/* eslint-disable-next-line react/no-danger */}
-                <span dangerouslySetInnerHTML={{ __html: sanitizedCellValue }} />
-              </div>
-            </td>
-          );
-        }
-
-        return (
-          <TableCell
-            key={colName}
-            columnId={colName}
-            onFilter={onFilter}
-            isTimeField={indexPattern.timeFieldName === colName}
-            fieldMapping={fieldMapping}
-            sanitizedCellValue={sanitizedCellValue}
-          />
-        );
-      })}
-    </tr>
-  );
-
-  const expandedTableRow = (
-    <tr key={'x' + row._id}>
-      <td
-        className="exploreDocTable__detailsParent"
-        colSpan={columns.length + 1}
-        data-test-subj="osdDocTableDetailsParent"
-      >
-        <EuiFlexGroup gutterSize="m" alignItems="center">
-          <EuiFlexItem
-            grow={false}
-            className="exploreDocTable__detailsIconContainer"
-            data-test-subj="osdDocTableDetailsIconContainer"
-          >
-            <EuiIcon type="folderOpen" />
-          </EuiFlexItem>
-          <EuiFlexItem>
-            <h4
-              className="euiTitle euiTitle--xxsmall"
-              i18n-id="explore.docTable.tableRow.detailHeading"
-              i18n-default-message="Expanded document"
-            >
-              Expanded document
-            </h4>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-        <EuiFlexGroup gutterSize="m">
-          <EuiFlexItem>
-            <DocViewer
-              renderProps={{
-                hit: row,
-                columns,
-                indexPattern,
-                filter: (mapping, value, mode) => {
-                  onFilter?.(mapping, value, mode);
-                  onClose?.();
-                },
-                onAddColumn: (columnName: string) => {
-                  onAddColumn?.(columnName);
-                  onClose?.();
-                },
-                onRemoveColumn: (columnName: string) => {
-                  onRemoveColumn?.(columnName);
-                  onClose?.();
-                },
-              }}
-              docViewsRegistry={docViewsRegistry}
-            />
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </td>
-    </tr>
-  );
+  const onTracesPage = isOnTracesPage();
 
   return (
     <>
-      {tableRow}
-      {isExpanded && expandedTableRow}
+      <TableRowContent
+        row={row}
+        index={index}
+        columns={columns}
+        dataset={dataset}
+        onFilter={onFilter}
+        isShortDots={isShortDots}
+        isExpanded={isExpanded}
+        onToggleExpand={handleExpanding}
+        isOnTracesPage={onTracesPage}
+        wrapCellText={wrapCellText}
+      />
+      {isExpanded && (
+        <ExpandedTableRow
+          row={row}
+          columns={columns}
+          dataset={dataset}
+          onFilter={onFilter}
+          onRemoveColumn={onRemoveColumn}
+          onAddColumn={onAddColumn}
+          onClose={onClose}
+          docViewsRegistry={docViewsRegistry}
+          expandedTableHeader={expandedTableHeader}
+        />
+      )}
     </>
   );
 };

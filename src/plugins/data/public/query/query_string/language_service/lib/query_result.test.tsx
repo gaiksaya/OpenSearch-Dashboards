@@ -3,12 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
 import { mountWithIntl, shallowWithIntl } from 'test_utils/enzyme_helpers';
 import { QueryResult } from './query_result';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-// @ts-expect-error TS6133 TODO(ts-error): fixme
-import { MessageChannel } from 'node:worker_threads';
 
 enum ResultStatus {
   UNINITIALIZED = 'uninitialized',

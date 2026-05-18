@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import { createOpenSearchDashboardsReactContext } from '../../../../../opensearch_dashboards_react/public';
 import { coreMock, workspacesServiceMock } from '../../../../../../core/public/mocks';
@@ -13,7 +12,17 @@ import { IntlProvider } from 'react-intl';
 import { IndexHeader } from './index_header';
 
 describe('IndexHeader at new home page', () => {
-  const indexPattern = { id: 'default-index', title: 'Test Index Pattern', fields: [] };
+  const indexPattern = {
+    id: 'default-index',
+    title: 'Test Index Pattern',
+    fields: [],
+    getFieldByName: (name: string) => undefined,
+    getComputedFields: () => ({}),
+    getScriptedFields: () => [],
+    getNonScriptedFields: () => [],
+    addScriptedField: async () => {},
+    removeScriptedField: () => {},
+  };
   const mockCoreStart = coreMock.createStart();
   const workspaceObject = {
     id: 'foo_id',
@@ -51,6 +60,7 @@ describe('IndexHeader at new home page', () => {
     });
 
     return (
+      // @ts-expect-error TS2769 TODO(ts-error): fixme
       <IntlProvider locale="en">
         <Provider>
           <IndexHeader

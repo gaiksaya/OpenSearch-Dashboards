@@ -57,6 +57,25 @@ export { addEmbeddableToDashboardUrl } from './url_utils/url_helper';
 export { SavedObjectDashboard } from './saved_dashboards';
 export { SavedDashboardPanel } from './types';
 export { AttributeService, ATTRIBUTE_SERVICE_KEY } from './attribute_service';
+export { DASHBOARD_ADD_PANEL_TRIGGER } from './ui_triggers';
+
+export { VariablesBar, VariablesBarProps } from './application/components/dashboard_variables';
+export { VariableService } from './variables/variable_service';
+export {
+  VariableInterpolationService,
+  IVariableInterpolationService,
+  createNoOpVariableInterpolationService,
+  VariableValue,
+} from './variables/variable_interpolation_service';
+export {
+  Variable,
+  VariableType,
+  VariableSortOrder,
+  QueryVariable,
+  CustomVariable,
+  VariableWithState,
+  VariableState,
+} from './variables/types';
 
 export function plugin(initializerContext: PluginInitializerContext) {
   return new DashboardPlugin(initializerContext);

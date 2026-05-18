@@ -3,48 +3,142 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { shallow } from 'enzyme';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { LineVisStyleControls, LineVisStyleControlsProps } from './line_vis_options';
-import { EuiTabbedContent } from '@elastic/eui';
-import { Positions } from '../utils/collections';
 import {
-  CategoryAxis,
-  GridOptions,
-  ThresholdLine,
-  ThresholdLineStyle,
-  ValueAxis,
+  ThresholdMode,
+  Positions,
   VisFieldType,
+  TooltipOptions,
+  AxisRole,
+  AxisColumnMappings,
+  StandardAxes,
 } from '../types';
-import { BasicVisOptions } from '../style_panel/basic_vis_options';
-import { ThresholdOptions } from '../style_panel/threshold_options';
-import { GridOptionsPanel } from '../style_panel/grid_options';
-import { AxesOptions } from '../style_panel/axes_options';
+import { LineStyle } from './line_exclusive_vis_options';
 
-// Mock the i18n module
-jest.mock('@osd/i18n', () => ({
-  i18n: {
-    translate: jest.fn().mockImplementation((id, { defaultMessage }) => defaultMessage),
+// Mock the child components
+jest.mock('../style_panel/axes/axes_selector', () => ({
+  AxesSelectPanel: jest.fn(({ updateVisualization, chartType, currentMapping }) => (
+    <div data-test-subj="mockAxesSelectPanel">
+      <div data-test-subj="chartType">{chartType}</div>
+      <button
+        data-test-subj="mockUpdateVisualization"
+        onClick={() => updateVisualization({ mappings: { x: 'date', y: 'value' } })}
+      >
+        Update Visualization
+      </button>
+    </div>
+  )),
+}));
+
+jest.mock('../style_panel/legend/legend', () => ({
+  LegendOptionsPanel: jest.fn(({ legendOptions, onLegendOptionsChange }) => (
+    <div data-test-subj="mockLegendOptionsPanel">
+      <button
+        data-test-subj="mockLegendShow"
+        onClick={() => onLegendOptionsChange({ show: !legendOptions.show })}
+      >
+        Toggle Legend
+      </button>
+      <button
+        data-test-subj="mockLegendPosition"
+        onClick={() => onLegendOptionsChange({ position: 'bottom' })}
+      >
+        Change Position
+      </button>
+      <button
+        data-test-subj="mockLegendBoth"
+        onClick={() => onLegendOptionsChange({ show: !legendOptions.show, position: 'top' })}
+      >
+        Change Both
+      </button>
+      <input
+        data-test-subj="mockLegendTitle"
+        placeholder="Legend Title"
+        onChange={(e) => onLegendOptionsChange({ title: e.target.value })}
+      />
+    </div>
+  )),
+}));
+
+jest.mock('../style_panel/threshold/threshold_panel', () => ({
+  ThresholdPanel: jest.fn(({ thresholdsOptions, onChange }) => (
+    <div data-test-subj="mockThresholdOptions">
+      <button
+        data-test-subj="mockUpdateThreshold"
+        onClick={() =>
+          onChange({ ...thresholdsOptions, thresholds: [{ value: 50, color: '#FF0000' }] })
+        }
+      >
+        Update Threshold
+      </button>
+    </div>
+  )),
+}));
+
+jest.mock('../style_panel/tooltip/tooltip', () => ({
+  TooltipOptionsPanel: jest.fn(({ tooltipOptions, onTooltipOptionsChange }) => (
+    <div data-test-subj="mockTooltipOptionsPanel">
+      <button
+        data-test-subj="mockUpdateTooltip"
+        onClick={() => onTooltipOptionsChange({ mode: 'hidden' })}
+      >
+        Update Tooltip
+      </button>
+    </div>
+  )),
+}));
+
+jest.mock('./line_exclusive_vis_options', () => ({
+  LineExclusiveVisOptions: jest.fn(
+    ({
+      addTimeMarker,
+      lineStyle,
+      lineMode,
+      lineWidth,
+      onAddTimeMarkerChange,
+      onLineModeChange,
+      onLineWidthChange,
+      onLineStyleChange,
+    }) => (
+      <div data-test-subj="mockLineExclusiveVisOptions">
+        <button
+          data-test-subj="mockUpdateAddTimeMarker"
+          onClick={() => onAddTimeMarkerChange(!addTimeMarker)}
+        >
+          Toggle Time Marker
+        </button>
+        <button
+          data-test-subj="mockUpdateLineMode"
+          onClick={() => onLineModeChange(lineMode === 'smooth' ? 'straight' : 'smooth')}
+        >
+          Toggle Line Mode
+        </button>
+        <button
+          data-test-subj="mockUpdateLineWidth"
+          onClick={() => onLineWidthChange(lineWidth + 1)}
+        >
+          Increase Line Width
+        </button>
+        <button
+          data-test-subj="mockUpdateLineStyle"
+          onClick={() => onLineStyleChange(lineStyle === 'both' ? 'line' : 'both')}
+        >
+          Toggle Line Style
+        </button>
+      </div>
+    )
+  ),
+  LineStyle: {
+    BOTH: 'both',
+    LINE: 'line',
+    DOTS: 'dots',
   },
 }));
 
 describe('LineVisStyleControls', () => {
-  const defaultThresholdLine: ThresholdLine = {
-    color: '#E7664C',
-    show: false,
-    style: ThresholdLineStyle.Full,
-    value: 10,
-    width: 1,
-  };
-
-  const defaultGrid: GridOptions = {
-    categoryLines: true,
-    valueLines: true,
-  };
-
-  const defaultCategoryAxis: CategoryAxis = {
-    id: 'CategoryAxis-1',
-    type: 'category',
+  const defaultCategoryAxis: StandardAxes = {
     position: Positions.BOTTOM,
     show: true,
     labels: {
@@ -53,15 +147,14 @@ describe('LineVisStyleControls', () => {
       rotate: 0,
       truncate: 100,
     },
+    grid: { showLines: true },
     title: {
       text: '',
     },
+    axisRole: AxisRole.X,
   };
 
-  const defaultValueAxis: ValueAxis = {
-    id: 'ValueAxis-1',
-    name: 'LeftAxis-1',
-    type: 'value',
+  const defaultValueAxis: StandardAxes = {
     position: Positions.LEFT,
     show: true,
     labels: {
@@ -70,164 +163,212 @@ describe('LineVisStyleControls', () => {
       filter: false,
       truncate: 100,
     },
+    grid: { showLines: true },
     title: {
       text: '',
     },
+    axisRole: AxisRole.Y,
+  };
+
+  const defaultTooltipOptions: TooltipOptions = {
+    mode: 'all',
+  };
+
+  const mockNumericalColumn = {
+    id: 1,
+    name: 'value',
+    schema: VisFieldType.Numerical,
+    column: 'field-1',
+    validValuesCount: 1,
+    uniqueValuesCount: 1,
+  };
+
+  const mockCategoricalColumn = {
+    id: 2,
+    name: 'category',
+    schema: VisFieldType.Categorical,
+    column: 'field-2',
+    validValuesCount: 1,
+    uniqueValuesCount: 1,
+  };
+
+  const mockDateColumn = {
+    id: 0,
+    name: 'date',
+    schema: VisFieldType.Date,
+    column: 'field-0',
+    validValuesCount: 1,
+    uniqueValuesCount: 1,
+  };
+
+  const mockAxisColumnMappings: AxisColumnMappings = {
+    [AxisRole.X]: mockDateColumn,
+    [AxisRole.Y]: mockNumericalColumn,
+    [AxisRole.COLOR]: mockCategoricalColumn,
   };
 
   const mockProps: LineVisStyleControlsProps = {
     styleOptions: {
-      addTooltip: true,
       addLegend: true,
       legendPosition: Positions.RIGHT,
+      legendTitle: '',
       addTimeMarker: false,
-      showLine: true,
+      lineStyle: 'both' as LineStyle,
       lineMode: 'smooth',
       lineWidth: 2,
-      showDots: true,
-      thresholdLine: defaultThresholdLine,
-      grid: defaultGrid,
-      categoryAxes: [defaultCategoryAxis],
-      valueAxes: [defaultValueAxis],
+      thresholdOptions: {
+        baseColor: '#00BD6B',
+        thresholds: [],
+        thresholdStyle: ThresholdMode.Solid,
+      },
+      tooltipOptions: defaultTooltipOptions,
+      standardAxes: [defaultCategoryAxis, defaultValueAxis],
+      showFullTimeRange: false,
     },
     onStyleChange: jest.fn(),
-    numericalColumns: [
-      {
-        id: 1,
-        name: 'value',
-        schema: VisFieldType.Numerical,
-        column: 'field-1',
-      },
-    ],
-    categoricalColumns: [
-      {
-        id: 2,
-        name: 'category',
-        schema: VisFieldType.Categorical,
-        column: 'field-2',
-      },
-    ],
-    dateColumns: [
-      {
-        id: 0,
-        name: 'date',
-        schema: VisFieldType.Date,
-        column: 'field-0',
-      },
-    ],
+    numericalColumns: [mockNumericalColumn],
+    categoricalColumns: [mockCategoricalColumn],
+    dateColumns: [mockDateColumn],
+    axisColumnMappings: mockAxisColumnMappings,
+    updateVisualization: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders without crashing', () => {
-    const wrapper = shallow(<LineVisStyleControls {...mockProps} />);
-    expect(wrapper).toMatchSnapshot();
+  test('renders with default props', () => {
+    render(<LineVisStyleControls {...mockProps} />);
+
+    expect(screen.getByTestId('mockAxesSelectPanel')).toBeInTheDocument();
+    expect(screen.getByTestId('mockLegendOptionsPanel')).toBeInTheDocument();
+    expect(screen.getByTestId('mockThresholdOptions')).toBeInTheDocument();
+    expect(screen.getByTestId('mockTooltipOptionsPanel')).toBeInTheDocument();
+    expect(screen.getByTestId('mockLineExclusiveVisOptions')).toBeInTheDocument();
   });
 
-  it('renders a tabbed content component with the correct tabs', () => {
-    const wrapper = shallow(<LineVisStyleControls {...mockProps} />);
-    const tabbedContent = wrapper.find(EuiTabbedContent);
-
-    expect(tabbedContent.exists()).toBe(true);
-    expect(tabbedContent.prop('tabs')).toHaveLength(4);
-
-    const tabIds = tabbedContent.prop('tabs').map((tab) => tab.id);
-    expect(tabIds).toEqual(['basic', 'threshold', 'grid', 'axes']);
-
-    const tabNames = tabbedContent.prop('tabs').map((tab) => tab.name);
-    expect(tabNames).toEqual(['Basic', 'Threshold', 'Grid', 'Axes']);
-  });
-
-  it('renders the BasicVisOptions component in the first tab', () => {
-    const wrapper = shallow(<LineVisStyleControls {...mockProps} />);
-    const basicTab = wrapper.find(EuiTabbedContent).prop('tabs')[0];
-    const basicTabContent = shallow(<div>{basicTab.content}</div>);
-
-    expect(basicTabContent.find(BasicVisOptions).exists()).toBe(true);
-    expect(basicTabContent.find(BasicVisOptions).props()).toMatchObject({
-      addTooltip: mockProps.styleOptions.addTooltip,
-      addLegend: mockProps.styleOptions.addLegend,
-      legendPosition: mockProps.styleOptions.legendPosition,
-      addTimeMarker: mockProps.styleOptions.addTimeMarker,
-      showLine: mockProps.styleOptions.showLine,
-      lineMode: mockProps.styleOptions.lineMode,
-      lineWidth: mockProps.styleOptions.lineWidth,
-      showDots: mockProps.styleOptions.showDots,
-    });
-  });
-
-  it('renders the ThresholdOptions component in the second tab', () => {
-    const wrapper = shallow(<LineVisStyleControls {...mockProps} />);
-    const thresholdTab = wrapper.find(EuiTabbedContent).prop('tabs')[1];
-    const thresholdTabContent = shallow(<div>{thresholdTab.content}</div>);
-
-    expect(thresholdTabContent.find(ThresholdOptions).exists()).toBe(true);
-    expect(thresholdTabContent.find(ThresholdOptions).props()).toMatchObject({
-      thresholdLine: mockProps.styleOptions.thresholdLine,
-    });
-  });
-
-  it('renders the GridOptionsPanel component in the third tab', () => {
-    const wrapper = shallow(<LineVisStyleControls {...mockProps} />);
-    const gridTab = wrapper.find(EuiTabbedContent).prop('tabs')[2];
-    const gridTabContent = shallow(<div>{gridTab.content}</div>);
-
-    expect(gridTabContent.find(GridOptionsPanel).exists()).toBe(true);
-    expect(gridTabContent.find(GridOptionsPanel).props()).toMatchObject({
-      grid: mockProps.styleOptions.grid,
-    });
-  });
-
-  it('renders the AxesOptions component in the fourth tab', () => {
-    const wrapper = shallow(<LineVisStyleControls {...mockProps} />);
-    const axesTab = wrapper.find(EuiTabbedContent).prop('tabs')[3];
-    const axesTabContent = shallow(<div>{axesTab.content}</div>);
-
-    expect(axesTabContent.find(AxesOptions).exists()).toBe(true);
-    expect(axesTabContent.find(AxesOptions).props()).toMatchObject({
-      categoryAxes: mockProps.styleOptions.categoryAxes,
-      valueAxes: mockProps.styleOptions.valueAxes,
-      numericalColumns: mockProps.numericalColumns,
-      categoricalColumns: mockProps.categoricalColumns,
-      dateColumns: mockProps.dateColumns,
-    });
-  });
-
-  it('calls onStyleChange with the correct parameters when a style option changes', () => {
-    const wrapper = shallow(<LineVisStyleControls {...mockProps} />);
-    const basicTab = wrapper.find(EuiTabbedContent).prop('tabs')[0];
-    const basicTabContent = shallow(<div>{basicTab.content}</div>);
-
-    // Simulate changing the addTooltip option
-    basicTabContent.find(BasicVisOptions).prop('onAddTooltipChange')(false);
-    expect(mockProps.onStyleChange).toHaveBeenCalledWith({ addTooltip: false });
-
-    // Simulate changing the lineWidth option
-    basicTabContent.find(BasicVisOptions).prop('onLineWidthChange')(3);
-    expect(mockProps.onStyleChange).toHaveBeenCalledWith({ lineWidth: 3 });
-  });
-
-  it('handles empty column arrays gracefully', () => {
-    const propsWithEmptyColumns = {
+  test('hides legend when no COLOR, FACET, or Y_SECOND mappings are present', () => {
+    const propsWithNoLegend = {
       ...mockProps,
-      numericalColumns: undefined,
-      categoricalColumns: undefined,
-      dateColumns: undefined,
+      axisColumnMappings: {
+        [AxisRole.X]: mockDateColumn,
+        [AxisRole.Y]: mockNumericalColumn,
+      },
     };
 
-    const wrapper = shallow(<LineVisStyleControls {...propsWithEmptyColumns} />);
-    expect(wrapper).toMatchSnapshot();
+    render(<LineVisStyleControls {...propsWithNoLegend} />);
 
-    // Check that the AxesOptions component still renders with empty arrays
-    const axesTab = wrapper.find(EuiTabbedContent).prop('tabs')[3];
-    const axesTabContent = shallow(<div>{axesTab.content}</div>);
+    expect(screen.queryByTestId('mockLegendOptionsPanel')).not.toBeInTheDocument();
+  });
 
-    expect(axesTabContent.find(AxesOptions).props()).toMatchObject({
-      numericalColumns: [],
-      categoricalColumns: [],
-      dateColumns: [],
+  test('renders legend panel when COLOR mapping is present', () => {
+    const propsWithColorMapping = {
+      ...mockProps,
+      axisColumnMappings: {
+        ...mockAxisColumnMappings,
+        [AxisRole.COLOR]: mockCategoricalColumn,
+      },
+    };
+
+    render(<LineVisStyleControls {...propsWithColorMapping} />);
+
+    expect(screen.getByTestId('mockLegendOptionsPanel')).toBeInTheDocument();
+  });
+
+  test('renders legend panel when FACET mapping is present', () => {
+    const propsWithFacetMapping = {
+      ...mockProps,
+      axisColumnMappings: {
+        ...mockAxisColumnMappings,
+        [AxisRole.FACET]: mockCategoricalColumn,
+      },
+    };
+
+    render(<LineVisStyleControls {...propsWithFacetMapping} />);
+
+    expect(screen.getByTestId('mockLegendOptionsPanel')).toBeInTheDocument();
+  });
+
+  test('renders legend panel when Y_SECOND mapping is present', () => {
+    const propsWithYSecondMapping = {
+      ...mockProps,
+      axisColumnMappings: {
+        ...mockAxisColumnMappings,
+        [AxisRole.Y_SECOND]: mockNumericalColumn,
+      },
+    };
+
+    render(<LineVisStyleControls {...propsWithYSecondMapping} />);
+
+    expect(screen.getByTestId('mockLegendOptionsPanel')).toBeInTheDocument();
+  });
+
+  test('calls onStyleChange with correct parameters for legend options', async () => {
+    const propsWithColorMapping = {
+      ...mockProps,
+      axisColumnMappings: {
+        ...mockAxisColumnMappings,
+        [AxisRole.COLOR]: mockCategoricalColumn,
+      },
+    };
+
+    render(<LineVisStyleControls {...propsWithColorMapping} />);
+
+    await userEvent.click(screen.getByTestId('mockLegendShow'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({ addLegend: false });
+
+    await userEvent.click(screen.getByTestId('mockLegendPosition'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({ legendPosition: 'bottom' });
+
+    await userEvent.click(screen.getByTestId('mockLegendBoth'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({ addLegend: false });
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({ legendPosition: 'top' });
+
+    const legendTitleInput = screen.getByTestId('mockLegendTitle');
+    await userEvent.type(legendTitleInput, 'New Legend Title');
+    await waitFor(() => {
+      expect(mockProps.onStyleChange).toHaveBeenCalledWith({ legendTitle: 'New Legend Title' });
     });
+  });
+
+  test('calls onStyleChange with correct parameters for threshold options', async () => {
+    render(<LineVisStyleControls {...mockProps} />);
+
+    await userEvent.click(screen.getByTestId('mockUpdateThreshold'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({
+      thresholdOptions: {
+        ...mockProps.styleOptions.thresholdOptions,
+        thresholds: [{ color: '#FF0000', value: 50 }],
+      },
+    });
+  });
+
+  test('calls onStyleChange with correct parameters for tooltip options', async () => {
+    render(<LineVisStyleControls {...mockProps} />);
+
+    await userEvent.click(screen.getByTestId('mockUpdateTooltip'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({
+      tooltipOptions: { ...mockProps.styleOptions.tooltipOptions, mode: 'hidden' },
+    });
+  });
+
+  test('calls onStyleChange with correct parameters for line exclusive options', async () => {
+    render(<LineVisStyleControls {...mockProps} />);
+
+    await userEvent.click(screen.getByTestId('mockUpdateAddTimeMarker'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({
+      addTimeMarker: !mockProps.styleOptions.addTimeMarker,
+    });
+
+    await userEvent.click(screen.getByTestId('mockUpdateLineMode'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({ lineMode: 'straight' });
+
+    await userEvent.click(screen.getByTestId('mockUpdateLineWidth'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({
+      lineWidth: mockProps.styleOptions.lineWidth + 1,
+    });
+
+    await userEvent.click(screen.getByTestId('mockUpdateLineStyle'));
+    expect(mockProps.onStyleChange).toHaveBeenCalledWith({ lineStyle: 'line' });
   });
 });

@@ -4,22 +4,19 @@
  */
 
 import React from 'react';
-import { EuiTabbedContent, EuiTabbedContentTab } from '@elastic/eui';
-import { i18n } from '@osd/i18n';
-import { LineChartStyleControls } from './line_vis_config';
-import { BasicVisOptions } from '../style_panel/basic_vis_options';
-import { ThresholdOptions } from '../style_panel/threshold_options';
-import { GridOptionsPanel } from '../style_panel/grid_options';
-import { VisColumn } from '../types';
-import { AxesOptions } from '../style_panel/axes_options';
+import { isEmpty } from 'lodash';
+import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { LineChartStyle, LineChartStyleOptions } from './line_vis_config';
+import { StyleControlsProps } from '../utils/use_visualization_types';
+import { LegendOptionsWrapper } from '../style_panel/legend/legend_options_wrapper';
+import { LineExclusiveVisOptions } from './line_exclusive_vis_options';
+import { TooltipOptionsPanel } from '../style_panel/tooltip/tooltip';
+import { AxesSelectPanel } from '../style_panel/axes/axes_selector';
+import { AxisRole, VisFieldType } from '../types';
+import { ThresholdPanel } from '../style_panel/threshold/threshold_panel';
+import { AllAxesOptions } from '../style_panel/axes/standard_axes_options';
 
-export interface LineVisStyleControlsProps {
-  styleOptions: LineChartStyleControls;
-  onStyleChange: (newOptions: Partial<LineChartStyleControls>) => void;
-  numericalColumns?: VisColumn[];
-  categoricalColumns?: VisColumn[];
-  dateColumns?: VisColumn[];
-}
+export type LineVisStyleControlsProps = StyleControlsProps<LineChartStyle>;
 
 export const LineVisStyleControls: React.FC<LineVisStyleControlsProps> = ({
   styleOptions,
@@ -27,95 +24,98 @@ export const LineVisStyleControls: React.FC<LineVisStyleControlsProps> = ({
   numericalColumns = [],
   categoricalColumns = [],
   dateColumns = [],
+  axisColumnMappings,
+  updateVisualization,
 }) => {
-  const updateStyleOption = <K extends keyof LineChartStyleControls>(
+  const updateStyleOption = <K extends keyof LineChartStyleOptions>(
     key: K,
-    value: LineChartStyleControls[K]
+    value: LineChartStyleOptions[K]
   ) => {
     onStyleChange({ [key]: value });
   };
 
-  const tabs: EuiTabbedContentTab[] = [
-    {
-      id: 'basic',
-      name: i18n.translate('explore.vis.lineChart.tabs.basic', {
-        defaultMessage: 'Basic',
-      }),
-      content: (
-        <BasicVisOptions
-          addTooltip={styleOptions.addTooltip}
-          addLegend={styleOptions.addLegend}
-          legendPosition={styleOptions.legendPosition}
-          addTimeMarker={styleOptions.addTimeMarker}
-          showLine={styleOptions.showLine}
-          lineMode={styleOptions.lineMode}
-          lineWidth={styleOptions.lineWidth}
-          showDots={styleOptions.showDots}
-          onAddTooltipChange={(addTooltip) => updateStyleOption('addTooltip', addTooltip)}
-          onAddLegendChange={(addLegend) => updateStyleOption('addLegend', addLegend)}
-          onLegendPositionChange={(legendPosition) =>
-            updateStyleOption('legendPosition', legendPosition)
-          }
-          onAddTimeMarkerChange={(addTimeMarker) =>
-            updateStyleOption('addTimeMarker', addTimeMarker)
-          }
-          onShowLineChange={(showLine) => updateStyleOption('showLine', showLine)}
-          onLineModeChange={(lineMode) => updateStyleOption('lineMode', lineMode)}
-          onLineWidthChange={(lineWidth) => updateStyleOption('lineWidth', lineWidth)}
-          onShowDotsChange={(showDots) => updateStyleOption('showDots', showDots)}
-        />
-      ),
-    },
-    {
-      id: 'threshold',
-      name: i18n.translate('explore.vis.lineChart.tabs.threshold', {
-        defaultMessage: 'Threshold',
-      }),
-      content: (
-        <ThresholdOptions
-          thresholdLine={styleOptions.thresholdLine}
-          onThresholdChange={(thresholdLine) => updateStyleOption('thresholdLine', thresholdLine)}
-        />
-      ),
-    },
-    {
-      id: 'grid',
-      name: i18n.translate('explore.vis.lineChart.tabs.grid', {
-        defaultMessage: 'Grid',
-      }),
-      content: (
-        <GridOptionsPanel
-          grid={styleOptions.grid}
-          onGridChange={(grid) => updateStyleOption('grid', grid)}
-        />
-      ),
-    },
-    {
-      id: 'axes',
-      name: i18n.translate('explore.vis.lineChart.tabs.axes', {
-        defaultMessage: 'Axes',
-      }),
-      content: (
-        <AxesOptions
-          categoryAxes={styleOptions.categoryAxes}
-          valueAxes={styleOptions.valueAxes}
-          onCategoryAxesChange={(categoryAxes) => updateStyleOption('categoryAxes', categoryAxes)}
-          onValueAxesChange={(valueAxes) => updateStyleOption('valueAxes', valueAxes)}
+  // Determine if the legend should be shown based on the selected mappings
+  const hasColorMapping = !!axisColumnMappings?.[AxisRole.COLOR];
+  const hasFacetMapping = !!axisColumnMappings?.[AxisRole.FACET];
+  const hasYSecondMapping = !!axisColumnMappings?.[AxisRole.Y_SECOND];
+  const shouldShowTimeMarker = axisColumnMappings?.[AxisRole.X]?.schema === VisFieldType.Date;
+
+  const shouldShowLegend = hasColorMapping || hasFacetMapping || hasYSecondMapping;
+  // The mapping object will be an empty object if no fields are selected on the axes selector. No
+  // visualization is generated in this case so we shouldn't display style option panels.
+  const hasMappingSelected = !isEmpty(axisColumnMappings);
+
+  return (
+    <EuiFlexGroup direction="column" gutterSize="none">
+      <EuiFlexItem grow={false}>
+        <AxesSelectPanel
           numericalColumns={numericalColumns}
           categoricalColumns={categoricalColumns}
           dateColumns={dateColumns}
+          currentMapping={axisColumnMappings}
+          updateVisualization={updateVisualization}
+          chartType="line"
         />
-      ),
-    },
-  ];
+      </EuiFlexItem>
 
-  return (
-    <EuiTabbedContent
-      tabs={tabs}
-      initialSelectedTab={tabs[0]}
-      autoFocus="selected"
-      size="s"
-      expand={false}
-    />
+      {hasMappingSelected && (
+        <>
+          <EuiFlexItem grow={false}>
+            <LineExclusiveVisOptions
+              shouldShowTimeMarker={shouldShowTimeMarker}
+              addTimeMarker={styleOptions.addTimeMarker}
+              lineStyle={styleOptions.lineStyle}
+              lineMode={styleOptions.lineMode}
+              lineWidth={styleOptions.lineWidth}
+              onAddTimeMarkerChange={(addTimeMarker) =>
+                updateStyleOption('addTimeMarker', addTimeMarker)
+              }
+              onLineModeChange={(lineMode) => updateStyleOption('lineMode', lineMode)}
+              onLineWidthChange={(lineWidth) => updateStyleOption('lineWidth', lineWidth)}
+              onLineStyleChange={(lineStyle) => updateStyleOption('lineStyle', lineStyle)}
+            />
+          </EuiFlexItem>
+
+          <EuiFlexItem>
+            <ThresholdPanel
+              thresholdsOptions={styleOptions.thresholdOptions}
+              onChange={(options) => updateStyleOption('thresholdOptions', options)}
+              showThresholdStyle={true}
+            />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <AllAxesOptions
+              axisColumnMappings={axisColumnMappings}
+              standardAxes={styleOptions.standardAxes}
+              onStandardAxesChange={(standardAxes) =>
+                updateStyleOption('standardAxes', standardAxes)
+              }
+              showFullTimeRange={styleOptions.showFullTimeRange}
+              onShowFullTimeRangeChange={(showFullTimeRange) =>
+                updateStyleOption('showFullTimeRange', showFullTimeRange)
+              }
+            />
+          </EuiFlexItem>
+
+          <LegendOptionsWrapper
+            styleOptions={styleOptions}
+            updateStyleOption={updateStyleOption}
+            shouldShow={shouldShowLegend}
+          />
+
+          <EuiFlexItem grow={false}>
+            <TooltipOptionsPanel
+              tooltipOptions={styleOptions.tooltipOptions}
+              onTooltipOptionsChange={(tooltipOptions) =>
+                updateStyleOption('tooltipOptions', {
+                  ...styleOptions.tooltipOptions,
+                  ...tooltipOptions,
+                })
+              }
+            />
+          </EuiFlexItem>
+        </>
+      )}
+    </EuiFlexGroup>
   );
 };

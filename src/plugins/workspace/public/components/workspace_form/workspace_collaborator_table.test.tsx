@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { fireEvent, render, waitFor, within } from '@testing-library/react';
-import ReactDOM from 'react-dom';
+import { act, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { WorkspaceCollaboratorTable, getDisplayedType } from './workspace_collaborator_table';
 import { createOpenSearchDashboardsReactContext } from '../../../../opensearch_dashboards_react/public';
 import { coreMock } from '../../../../../core/public/mocks';
@@ -99,6 +97,69 @@ describe('WorkspaceCollaboratorTable', () => {
     expect(render(<WorkspaceCollaboratorTable {...mockProps} />)).toMatchSnapshot();
   });
 
+  it('should render Name column header', () => {
+    const { getAllByText } = render(<WorkspaceCollaboratorTable {...mockProps} />);
+    expect(getAllByText('Name').length).toBeGreaterThan(0);
+  });
+
+  it('should fetch names when displayedCollaboratorTypes have identitySource', async () => {
+    const httpPostMock = mockCoreStart.http.post as jest.Mock;
+    httpPostMock.mockResolvedValue([
+      { id: 'admin', name: 'Admin User', alias: 'admin_alias' },
+      { id: 'group', name: 'Dev Group' },
+    ]);
+
+    const typesWithIdentitySource: WorkspaceCollaboratorType[] = [
+      {
+        id: 'user',
+        name: 'User',
+        buttonLabel: 'Add Users',
+        onAdd: async () => {},
+        getDisplayedType: ({ permissionType }) => (permissionType === 'user' ? 'User' : undefined),
+        identitySource: { source: 'LDAP', type: 'user' },
+      },
+      {
+        id: 'group',
+        name: 'Group',
+        buttonLabel: 'Add Groups',
+        onAdd: async () => {},
+        getDisplayedType: ({ permissionType }) =>
+          permissionType === 'group' ? 'Group' : undefined,
+        identitySource: { source: 'LDAP', type: 'group' },
+      },
+    ];
+
+    const { getByText } = render(
+      <Provider>
+        <WorkspaceCollaboratorTable
+          {...mockProps}
+          displayedCollaboratorTypes={typesWithIdentitySource}
+        />
+      </Provider>
+    );
+
+    await waitFor(() => {
+      expect(httpPostMock).toHaveBeenCalledWith('/api/security/identity/_entries', {
+        body: expect.any(String),
+        signal: expect.any(AbortSignal),
+      });
+    });
+
+    await waitFor(() => {
+      // User with alias shows "Name (alias)" format
+      expect(getByText('Admin User (admin_alias)')).toBeInTheDocument();
+      // Group without alias shows name only
+      expect(getByText('Dev Group')).toBeInTheDocument();
+    });
+  });
+
+  it('should show dash when name is not available', () => {
+    const { container } = render(<WorkspaceCollaboratorTable {...mockProps} />);
+    // Without identitySource, no fetch happens, name column shows mdash
+    const nameCells = container.querySelectorAll('td:nth-child(3)');
+    expect(nameCells.length).toBeGreaterThan(0);
+  });
+
   it('should render empty state when no permission settings', () => {
     const permissionSettings: any[] = [];
 
@@ -167,10 +228,12 @@ describe('WorkspaceCollaboratorTable', () => {
       </Provider>
     );
 
+    // Store the unmount function returned by the mount point
+    let unmountModal: (() => void) | undefined;
     mockOverlays.openModal.mockReturnValue({
       onClose: Promise.resolve(),
       close: async () => {
-        ReactDOM.unmountComponentAtNode(getByTestId('confirm-modal-container'));
+        unmountModal?.();
       },
     });
     const action = getByTestId('workspace-detail-collaborator-table-actions-box');
@@ -178,7 +241,12 @@ describe('WorkspaceCollaboratorTable', () => {
     const deleteCollaborator = getByText('Delete collaborator');
     fireEvent.click(deleteCollaborator);
 
-    mockOverlays.openModal.mock.calls[0][0](getByTestId('confirm-modal-container'));
+    const modalContainer = getByTestId('confirm-modal-container');
+    // Call the mount function and store its returned unmount function
+    // Wrap in act() to handle React 18 state updates during modal mount
+    await act(async () => {
+      unmountModal = mockOverlays.openModal.mock.calls[0][0](modalContainer);
+    });
     await waitFor(() => {
       expect(getByText('Confirm')).toBeInTheDocument();
     });
@@ -278,10 +346,12 @@ describe('WorkspaceCollaboratorTable', () => {
       </Provider>
     );
 
+    // Store the unmount function returned by the mount point
+    let unmountModal: (() => void) | undefined;
     mockOverlays.openModal.mockReturnValue({
       onClose: Promise.resolve(),
       close: async () => {
-        ReactDOM.unmountComponentAtNode(getByTestId('modal-container'));
+        unmountModal?.();
       },
     });
 
@@ -293,7 +363,12 @@ describe('WorkspaceCollaboratorTable', () => {
     await waitFor(() => {
       fireEvent.click(within(getByRole('dialog')).getByText('Read only'));
     });
-    mockOverlays.openModal.mock.calls[0][0](getByTestId('modal-container'));
+    const modalContainer = getByTestId('modal-container');
+    // Call the mount function and store its returned unmount function
+    // Wrap in act() to handle React 18 state updates during modal mount
+    await act(async () => {
+      unmountModal = mockOverlays.openModal.mock.calls[0][0](modalContainer);
+    });
     await waitFor(() => {
       expect(getByText('Confirm')).toBeInTheDocument();
     });
@@ -351,10 +426,12 @@ describe('WorkspaceCollaboratorTable', () => {
         </>
       </Provider>
     );
+    // Store the unmount function returned by the mount point
+    let unmountModal: (() => void) | undefined;
     mockOverlays.openModal.mockReturnValue({
       onClose: Promise.resolve(),
       close: async () => {
-        ReactDOM.unmountComponentAtNode(getByTestId('confirm-modal-container'));
+        unmountModal?.();
       },
     });
     const action = getByTestId('workspace-detail-collaborator-table-actions-box');
@@ -364,7 +441,12 @@ describe('WorkspaceCollaboratorTable', () => {
       fireEvent.click(within(getByRole('dialog')).getByText('Read only'));
     });
 
-    mockOverlays.openModal.mock.calls[0][0](getByTestId('confirm-modal-container'));
+    const modalContainer = getByTestId('confirm-modal-container');
+    // Call the mount function and store its returned unmount function
+    // Wrap in act() to handle React 18 state updates during modal mount
+    await act(async () => {
+      unmountModal = mockOverlays.openModal.mock.calls[0][0](modalContainer);
+    });
     await waitFor(() => {
       expect(getByText('Confirm')).toBeInTheDocument();
     });

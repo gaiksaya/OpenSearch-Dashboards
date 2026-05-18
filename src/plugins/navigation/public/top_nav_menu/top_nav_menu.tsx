@@ -31,7 +31,7 @@
 // @ts-expect-error TS6133 TODO(ts-error): fixme
 import { EuiFlexGroup, EuiFlexItem, EuiHeaderLinks, EuiText, EuiTitle } from '@elastic/eui';
 import classNames from 'classnames';
-import React, { ReactElement, useRef } from 'react';
+import { ReactElement, useRef } from 'react';
 
 import { MountPoint } from '../../../../core/public';
 import {
@@ -61,6 +61,11 @@ export type TopNavMenuProps = Omit<StatefulSearchBarProps, 'showDatePicker'> &
     showDatePicker?: boolean | TopNavMenuItemRenderType;
     showFilterBar?: boolean;
     showDataSourceMenu?: boolean;
+    showDatasetSelect?: boolean | TopNavMenuItemRenderType;
+    datasetSelectProps?: {
+      onSelect?: (dataset: any) => void;
+      appName?: string;
+    };
     data?: DataPublicPluginStart;
     groupActions?: boolean;
     className?: string;
@@ -99,36 +104,49 @@ export type TopNavMenuProps = Omit<StatefulSearchBarProps, 'showDatePicker'> &
 export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
   const {
     config,
-    showSearchBar,
-    showDatePicker,
-    showDataSourceMenu,
+    showSearchBar = false,
+    showDatePicker = true,
+    showDataSourceMenu = false,
+    showDatasetSelect = false,
     dataSourceMenuConfig,
-    groupActions,
-    screenTitle,
+    groupActions = false,
+    screenTitle = '',
+    showCancelButton = false,
+    showQueryBar = true,
+    showQueryInput = true,
+    showFilterBar = true,
     ...searchBarProps
   } = props;
 
   const datePickerRef = useRef<HTMLDivElement>(null);
 
-  if (
+  // DEBUG: Check early return condition
+  const shouldReturnNull =
     (!config || config.length === 0) &&
     (!showSearchBar || !props.data) &&
-    (!showDataSourceMenu || !dataSourceMenuConfig)
-  ) {
+    (!showDataSourceMenu || !dataSourceMenuConfig) &&
+    (!showDatasetSelect || !props.data);
+
+  if (shouldReturnNull) {
     return null;
   }
 
   function renderItems(): ReactElement | ReactElement[] | null {
-    if (!config || config.length === 0) return null;
+    if (!config || config.length === 0) {
+      return null;
+    }
+
     const renderedItems = config.map((menuItem: TopNavMenuData, i: number) => {
       return <TopNavMenuItem key={`nav-menu-${i}`} {...menuItem} />;
     });
 
-    return groupActions ? (
+    const result = groupActions ? (
       <div className="osdTopNavMenuGroupedActions">{renderedItems}</div>
     ) : (
       renderedItems
     );
+
+    return result;
   }
 
   function renderMenu(className: string, spreadSections: boolean = false): ReactElement | null {
@@ -146,6 +164,7 @@ export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
       >
         {renderItems()}
         {renderDataSourceMenu()}
+        {renderDatasetSelect()}
       </EuiHeaderLinks>
     );
   }
@@ -156,6 +175,19 @@ export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
     return <DataSourceMenu {...dataSourceMenuConfig!} />;
   }
 
+  function renderDatasetSelect(): ReactElement | null {
+    if (!showDatasetSelect || !props.data) return null;
+    const { DatasetSelect } = props.data.ui;
+
+    return (
+      // @ts-expect-error TS2741 TODO(ts-error): fixme
+      <DatasetSelect
+        onSelect={props.datasetSelectProps?.onSelect || (() => {})}
+        appName={props.datasetSelectProps?.appName || props.appName || ''}
+      />
+    );
+  }
+
   function renderSearchBar(overrides: Partial<SearchBarProps> = {}): ReactElement | null {
     // Validate presence of all required fields
     if (!showSearchBar || !props.data) return null;
@@ -163,6 +195,10 @@ export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
     return (
       <SearchBar
         {...searchBarProps}
+        showQueryBar={showQueryBar}
+        showQueryInput={showQueryInput}
+        showFilterBar={showFilterBar}
+        showCancelButton={showCancelButton}
         showDatePicker={![TopNavMenuItemRenderType.OMITTED, false].includes(showDatePicker!)}
         {...overrides}
         queryStatus={props.queryStatus}
@@ -174,14 +210,21 @@ export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
     const { setMenuMountPoint } = props;
     const menuClassName = classNames('osdTopNavMenu', props.className);
 
-    if (setMenuMountPoint) {
+    // Check if setMenuMountPoint is a meaningful function (not just an empty function)
+    const hasValidMountPoint = setMenuMountPoint && setMenuMountPoint.toString() !== '() => {}';
+
+    if (hasValidMountPoint) {
       if (groupActions) {
         switch (showSearchBar) {
           case TopNavMenuItemRenderType.IN_PORTAL:
             return (
               <>
                 <MountPointPortal setMountPoint={setMenuMountPoint}>
-                  <EuiFlexGroup alignItems="stretch" gutterSize="none">
+                  <EuiFlexGroup
+                    alignItems="stretch"
+                    gutterSize="none"
+                    className="osdTopNavMenuGroup"
+                  >
                     <EuiFlexItem grow={false} className="osdTopNavMenuScreenTitle">
                       <EuiTitle size="xs">
                         <h1>{screenTitle}</h1>
@@ -202,7 +245,7 @@ export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
           case TopNavMenuItemRenderType.OMITTED:
             return screenTitle ? (
               <MountPointPortal setMountPoint={setMenuMountPoint}>
-                <EuiFlexGroup alignItems="stretch" gutterSize="none">
+                <EuiFlexGroup alignItems="stretch" gutterSize="none" className="osdTopNavMenuGroup">
                   <EuiFlexItem grow={false} className="osdTopNavMenuScreenTitle">
                     <EuiTitle size="xs">
                       <h1>{screenTitle}</h1>
@@ -224,7 +267,11 @@ export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
             return (
               <>
                 <MountPointPortal setMountPoint={setMenuMountPoint}>
-                  <EuiFlexGroup alignItems="stretch" gutterSize="none">
+                  <EuiFlexGroup
+                    alignItems="stretch"
+                    gutterSize="none"
+                    className="osdTopNavMenuGroup"
+                  >
                     <EuiFlexItem grow={false} className="osdTopNavMenuScreenTitle">
                       <EuiTitle size="xs">
                         <h1>{screenTitle}</h1>
@@ -235,6 +282,11 @@ export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
                     </EuiFlexItem>
                     <EuiFlexItem className="globalDatePicker">
                       <div ref={datePickerRef} />
+                      {!showDatePicker && props.customSubmitButton && (
+                        <div className="osdTopNavCustomSubmitButton">
+                          {props.customSubmitButton}
+                        </div>
+                      )}
                     </EuiFlexItem>
                   </EuiFlexGroup>
                 </MountPointPortal>
@@ -265,14 +317,3 @@ export function TopNavMenu(props: TopNavMenuProps): ReactElement | null {
 
   return renderLayout();
 }
-
-TopNavMenu.defaultProps = {
-  showSearchBar: false,
-  showQueryBar: true,
-  showQueryInput: true,
-  showDatePicker: true,
-  showFilterBar: true,
-  showDataSourceMenu: false,
-  screenTitle: '',
-  groupActions: false,
-};

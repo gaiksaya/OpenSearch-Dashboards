@@ -3,451 +3,300 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LineChartStyleControls } from './line_vis_config';
-import { VisColumn } from '../types';
+import { LineChartStyle } from './line_vis_config';
+import { AxisRole, VisColumn } from '../types';
+import { createLineSeries, createLineBarSeries, createFacetLineSeries } from './line_chart_utils';
+import { getAxisConfig, getColumnsFromAxisColumnMapping } from '../utils/utils';
 import {
-  buildMarkConfig,
-  createThresholdLayer,
-  createTimeMarkerLayer,
-  applyAxisStyling,
-  getStrokeDash,
-  ValueAxisPosition,
-} from './line_chart_utils';
-import { Positions } from '../utils/collections';
+  pipe,
+  createBaseConfig,
+  buildAxisConfigs,
+  assembleSpec,
+  applyTimeRange,
+} from '../utils/echarts_spec';
+import {
+  convertTo2DArray,
+  transform,
+  pivot,
+  sortByTime,
+  facetTransform,
+  flatten,
+} from '../utils/data_transformation';
 
 /**
- * Rule 1: Create a simple line chart with one metric and one date
- * @param transformedData The transformed data
- * @param numericalColumns The numerical columns
- * @param dateColumns The date columns
- * @param styles The style options
- * @returns The Vega spec for a simple line chart
+ * Create a simple line chart with one metric and one date
  */
 export const createSimpleLineChart = (
   transformedData: Array<Record<string, any>>,
-  numericalColumns: VisColumn[],
-  dateColumns: VisColumn[],
-  styles: Partial<LineChartStyleControls>
+  styles: LineChartStyle,
+  axisColumnMappings: { [AxisRole.X]: VisColumn; [AxisRole.Y]: VisColumn[] },
+  timeRange?: { from: string; to: string }
 ): any => {
-  const metricField = numericalColumns[0].column;
-  const dateField = dateColumns[0].column;
-  const metricName = numericalColumns[0].name;
-  const dateName = dateColumns[0].name;
-  const layers: any[] = [];
+  const axisConfig = getAxisConfig(styles);
 
-  const mainLayer = {
-    mark: buildMarkConfig(styles, 'line'),
-    encoding: {
-      x: {
-        field: dateField,
-        type: 'temporal',
-        axis: applyAxisStyling(
-          {
-            title: dateName,
-            labelAngle: -45,
-          },
-          styles,
-          'category',
-          numericalColumns,
-          [],
-          dateColumns
-        ),
-      },
-      y: {
-        field: metricField,
-        type: 'quantitative',
-        axis: applyAxisStyling(
-          { title: metricName },
-          styles,
-          'value',
-          numericalColumns,
-          [],
-          dateColumns
-        ),
-      },
-    },
-  };
+  const timeField = axisColumnMappings[AxisRole.X].column;
+  const valueField = axisColumnMappings[AxisRole.Y].map((y) => y.column);
+  const valueFieldNames = axisColumnMappings[AxisRole.Y].map((y) => y.name) ?? [];
 
-  layers.push(mainLayer);
+  const allColumns = getColumnsFromAxisColumnMapping(axisColumnMappings);
 
-  // Add threshold layer if enabled
-  const thresholdLayer = createThresholdLayer(styles);
-  if (thresholdLayer) {
-    layers.push(thresholdLayer);
-  }
+  const result = pipe(
+    transform(sortByTime(timeField), convertTo2DArray(allColumns)),
+    createBaseConfig({ legend: { show: false } }),
+    buildAxisConfigs,
+    applyTimeRange,
+    createLineSeries({
+      styles,
+      categoryField: timeField,
+      seriesFields: valueField,
+    }),
+    assembleSpec
+  )({
+    data: transformedData,
+    styles,
+    axisConfig,
+    axisColumnMappings: axisColumnMappings ?? {},
+    timeRange,
+  });
 
-  // Add time marker layer if enabled
-  const timeMarkerLayer = createTimeMarkerLayer(styles);
-  if (timeMarkerLayer) {
-    layers.push(timeMarkerLayer);
-  }
-
-  return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-    title: `${metricName} Over Time`,
-    data: { values: transformedData },
-    layer: layers,
-  };
+  return result.spec;
 };
 
 /**
- * Rule 2: Create a combined line and bar chart with two metrics and one date
- * @param transformedData The transformed data
- * @param numericalColumns The numerical columns
- * @param dateColumns The date columns
- * @param styles The style options
- * @returns The Vega spec for a combined line and bar chart
+ * Create a combined line and bar chart with two metrics and one date
  */
 export const createLineBarChart = (
   transformedData: Array<Record<string, any>>,
-  numericalColumns: VisColumn[],
-  dateColumns: VisColumn[],
-  styles: Partial<LineChartStyleControls>
+  styles: LineChartStyle,
+  axisColumnMappings: {
+    [AxisRole.X]: VisColumn;
+    [AxisRole.Y]: VisColumn[];
+    [AxisRole.Y_SECOND]: VisColumn[];
+  },
+  timeRange?: { from: string; to: string }
 ): any => {
-  const metric1Field = numericalColumns[0].column;
-  const metric2Field = numericalColumns[1].column;
-  const dateField = dateColumns[0].column;
-  const metric1Name = numericalColumns[0].name;
-  const metric2Name = numericalColumns[1].name;
-  const dateName = dateColumns[0].name;
-  const layers: any[] = [];
+  const axisConfig = getAxisConfig(styles);
 
-  const barLayer = {
-    mark: buildMarkConfig(styles, 'bar'),
-    encoding: {
-      x: {
-        field: dateField,
-        type: 'temporal',
-        axis: applyAxisStyling(
-          {
-            title: dateName,
-            labelAngle: -45,
-          },
-          styles,
-          'category',
-          numericalColumns,
-          [],
-          dateColumns
-        ),
-      },
-      y: {
-        field: metric1Field,
-        type: 'quantitative',
-        axis: applyAxisStyling(
-          { title: metric1Name },
-          styles,
-          'value',
-          numericalColumns,
-          [],
-          dateColumns,
-          ValueAxisPosition.Left // First value axis which is on the left
-        ),
-      },
-      color: {
-        datum: metric1Name,
-        legend: styles.addLegend
-          ? {
-              title: 'Metrics',
-              orient: styles.legendPosition,
-            }
-          : null,
-      },
-    },
-  };
+  const timeField = axisColumnMappings.x.column;
+  const valueField = axisColumnMappings.y.map((y) => y.column);
+  const valueFieldNames = axisColumnMappings.y.map((y) => y.name) ?? [];
+  const value2Field = axisColumnMappings.y2.map((y) => y.column);
+  const value2FieldNames = axisColumnMappings.y2.map((y) => y.name) ?? [];
 
-  const lineLayer = {
-    mark: buildMarkConfig(styles, 'line'),
-    encoding: {
-      x: {
-        field: dateField,
-        type: 'temporal',
-      },
-      y: {
-        field: metric2Field,
-        type: 'quantitative',
-        axis: applyAxisStyling(
-          {
-            title: metric2Name,
-            orient: Positions.RIGHT,
-          },
-          styles,
-          'value',
-          numericalColumns,
-          [],
-          dateColumns,
-          ValueAxisPosition.Right // Second value axis which is on the right
-        ),
-        scale: { zero: false },
-      },
-      color: {
-        datum: metric2Name,
-        legend: styles.addLegend
-          ? {
-              title: 'Metrics',
-              orient: styles.legendPosition,
-            }
-          : null,
-      },
-    },
-  };
-
-  layers.push(barLayer, lineLayer);
-
-  // Add threshold layer if enabled
-  const thresholdLayer = createThresholdLayer(styles);
-  if (thresholdLayer) {
-    layers.push(thresholdLayer);
+  if (!timeField || !valueField || !value2Field) {
+    throw Error('Missing axis config or color field for line-bar chart');
   }
 
-  // Add time marker layer if enabled
-  const timeMarkerLayer = createTimeMarkerLayer(styles);
-  if (timeMarkerLayer) {
-    layers.push(timeMarkerLayer);
-  }
+  const allColumns = getColumnsFromAxisColumnMapping(axisColumnMappings);
 
-  return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-    title: `${metric1Name} (Bar) and ${metric2Name} (Line) Over Time`,
-    data: { values: transformedData },
-    layer: layers,
-    resolve: {
-      scale: { y: 'independent' },
-    },
-  };
+  const result = pipe(
+    transform(sortByTime(timeField), convertTo2DArray(allColumns)),
+    createBaseConfig({
+      legend: { show: styles.addLegend },
+    }),
+    buildAxisConfigs,
+    applyTimeRange,
+    createLineBarSeries({ styles, categoryField: timeField, value2Field, valueField }),
+    assembleSpec
+  )({
+    data: transformedData,
+    styles,
+    axisConfig,
+    axisColumnMappings: axisColumnMappings ?? {},
+    timeRange,
+  });
+
+  return result.spec;
 };
 
 /**
- * Rule 3: Create a multi-line chart with one metric, one date, and one categorical column
- * @param transformedData The transformed data
- * @param numericalColumns The numerical columns
- * @param categoricalColumns The categorical columns
- * @param dateColumns The date columns
- * @param styles The style options
- * @returns The Vega spec for a multi-line chart
+ * Create a multi-line chart with one metric, one date, and one categorical column
  */
 export const createMultiLineChart = (
   transformedData: Array<Record<string, any>>,
-  numericalColumns: VisColumn[],
-  categoricalColumns: VisColumn[],
-  dateColumns: VisColumn[],
-  styles: Partial<LineChartStyleControls>
+  styles: LineChartStyle,
+  axisColumnMappings: {
+    [AxisRole.X]: VisColumn;
+    [AxisRole.Y]: VisColumn;
+    [AxisRole.COLOR]: VisColumn;
+  },
+  timeRange?: { from: string; to: string }
 ): any => {
-  const metricField = numericalColumns[0].column;
-  const dateField = dateColumns[0].column;
-  const categoryField = categoricalColumns[0].column;
-  const metricName = numericalColumns[0].name;
-  const dateName = dateColumns[0].name;
-  const categoryName = categoricalColumns[0].name;
-  const layers: any[] = [];
+  const axisConfig = getAxisConfig(styles);
 
-  const mainLayer = {
-    mark: buildMarkConfig(styles, 'line'),
-    encoding: {
-      x: {
-        field: dateField,
-        type: 'temporal',
-        axis: applyAxisStyling(
-          {
-            title: dateName,
-            labelAngle: -45,
-          },
-          styles,
-          'category',
-          numericalColumns,
-          categoricalColumns,
-          dateColumns
-        ),
-      },
-      y: {
-        field: metricField,
-        type: 'quantitative',
-        axis: applyAxisStyling(
-          { title: metricName },
-          styles,
-          'value',
-          numericalColumns,
-          categoricalColumns,
-          dateColumns
-        ),
-      },
-      color: {
-        field: categoryField,
-        type: 'nominal',
-        legend:
-          styles?.addLegend !== false
-            ? {
-                title: categoryName,
-                orient: styles?.legendPosition || Positions.RIGHT,
-              }
-            : null,
-      },
-    },
-  };
+  const timeField = axisColumnMappings[AxisRole.X].column;
+  const valueField = axisColumnMappings[AxisRole.Y].column;
+  const colorField = axisColumnMappings[AxisRole.COLOR].column;
 
-  layers.push(mainLayer);
+  const result = pipe(
+    transform(
+      sortByTime(timeField),
+      pivot({
+        groupBy: timeField,
+        pivot: colorField,
+        field: valueField,
+      }),
+      flatten(),
+      convertTo2DArray()
+    ),
+    createBaseConfig({
+      legend: { show: styles.addLegend },
+    }),
+    buildAxisConfigs,
+    applyTimeRange,
+    createLineSeries({
+      styles,
+      categoryField: timeField,
+      seriesFields: (headers) => (headers ?? []).filter((h) => h !== timeField),
+    }),
+    assembleSpec
+  )({
+    data: transformedData,
+    styles,
+    axisConfig,
+    axisColumnMappings: axisColumnMappings ?? {},
+    timeRange,
+  });
 
-  // Add threshold layer if enabled
-  const thresholdLayer = createThresholdLayer(styles);
-  if (thresholdLayer) {
-    layers.push(thresholdLayer);
-  }
-
-  // Add time marker layer if enabled
-  const timeMarkerLayer = createTimeMarkerLayer(styles);
-  if (timeMarkerLayer) {
-    layers.push(timeMarkerLayer);
-  }
-
-  return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-    title: `${metricName} Over Time by ${categoryName}`,
-    data: { values: transformedData },
-    layer: layers,
-  };
+  return result.spec;
 };
 
 /**
- * Rule 4: Create a faceted multi-line chart with one metric, one date, and two categorical columns
- * @param transformedData The transformed data
- * @param numericalColumns The numerical columns
- * @param categoricalColumns The categorical columns
- * @param dateColumns The date columns
- * @param styles The style options
- * @returns The Vega spec for a faceted multi-line chart
+ * Create a faceted multi-line chart with one metric, one date, and two categorical columns
  */
 export const createFacetedMultiLineChart = (
   transformedData: Array<Record<string, any>>,
-  numericalColumns: VisColumn[],
-  categoricalColumns: VisColumn[],
-  dateColumns: VisColumn[],
-  styles: Partial<LineChartStyleControls>
+  styles: LineChartStyle,
+  axisColumnMappings: {
+    [AxisRole.X]: VisColumn;
+    [AxisRole.Y]: VisColumn;
+    [AxisRole.COLOR]: VisColumn;
+    [AxisRole.FACET]: VisColumn;
+  },
+  timeRange?: { from: string; to: string }
 ): any => {
-  const metricField = numericalColumns[0].column;
-  const dateField = dateColumns[0].column;
-  const category1Field = categoricalColumns[0].column;
-  const category2Field = categoricalColumns[1].column;
-  const metricName = numericalColumns[0].name;
-  const dateName = dateColumns[0].name;
-  const category1Name = categoricalColumns[0].name;
-  const category2Name = categoricalColumns[1].name;
+  const axisConfig = getAxisConfig(styles);
 
-  // Create a mark config for the faceted spec
-  const facetMarkConfig = buildMarkConfig(styles, 'line');
+  const timeField = axisColumnMappings[AxisRole.X].column;
+  const valueField = axisColumnMappings[AxisRole.Y].column;
+  const colorField = axisColumnMappings[AxisRole.COLOR].column;
+  const facetColumn = axisColumnMappings[AxisRole.FACET].column;
 
-  return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-    title: `${metricName} Over Time by ${category1Name} (Faceted by ${category2Name})`,
-    data: { values: transformedData },
-    // Add a max width to the entire visualization and make it scrollable
-    width: 'container',
-    autosize: {
-      type: 'fit-x',
-      contains: 'padding',
-    },
-    facet: {
-      field: category2Field,
-      type: 'nominal',
-      columns: 2,
-      header: { title: category2Name },
-    },
-    spec: {
-      width: 250, // Reduced from 300 to fit better
-      height: 200,
-      layer: [
-        {
-          mark: facetMarkConfig,
-          encoding: {
-            x: {
-              field: dateField,
-              type: 'temporal',
-              axis: applyAxisStyling(
-                {
-                  title: dateName,
-                  labelAngle: -45,
-                },
-                styles,
-                'category',
-                numericalColumns,
-                categoricalColumns,
-                dateColumns
-              ),
-            },
-            y: {
-              field: metricField,
-              type: 'quantitative',
-              axis: applyAxisStyling(
-                { title: metricName },
-                styles,
-                'value',
-                numericalColumns,
-                categoricalColumns,
-                dateColumns
-              ),
-            },
-            color: {
-              field: category1Field,
-              type: 'nominal',
-              legend:
-                styles?.addLegend !== false
-                  ? {
-                      title: category1Name,
-                      orient: styles?.legendPosition || Positions.RIGHT,
-                    }
-                  : null,
-            },
-          },
-        },
-        // Add threshold layer to each facet if enabled
-        ...(styles?.thresholdLine?.show
-          ? [
-              {
-                mark: {
-                  type: 'rule',
-                  color: styles.thresholdLine.color,
-                  strokeWidth: styles.thresholdLine.width,
-                  strokeDash: getStrokeDash(styles.thresholdLine.style),
-                  tooltip: styles?.addTooltip !== false,
-                },
-                encoding: {
-                  y: {
-                    datum: styles.thresholdLine.value,
-                    type: 'quantitative',
-                  },
-                  ...(styles?.addTooltip !== false && {
-                    tooltip: {
-                      value: `Threshold: ${styles.thresholdLine.value}`,
-                    },
-                  }),
-                },
-              },
-            ]
-          : []),
-        // Add time marker to each facet if enabled
-        ...(styles?.addTimeMarker
-          ? [
-              {
-                mark: {
-                  type: 'rule',
-                  color: '#FF6B6B',
-                  strokeWidth: 2,
-                  strokeDash: [3, 3],
-                  tooltip: styles?.addTooltip !== false,
-                },
-                encoding: {
-                  x: {
-                    datum: { expr: 'now()' },
-                    type: 'temporal',
-                  },
-                  ...(styles?.addTooltip !== false && {
-                    tooltip: {
-                      value: 'Current Time',
-                    },
-                  }),
-                },
-              },
-            ]
-          : []),
-      ],
-    },
-  };
+  const result = pipe(
+    facetTransform(
+      facetColumn,
+      sortByTime(timeField),
+      pivot({
+        groupBy: timeField,
+        pivot: colorField,
+        field: valueField,
+      }),
+      flatten(),
+      convertTo2DArray()
+    ),
+    createBaseConfig({
+      legend: { show: styles.addLegend },
+    }),
+    buildAxisConfigs,
+    applyTimeRange,
+    createFacetLineSeries({
+      styles,
+      categoryField: timeField,
+      seriesFields: (headers) => (headers ?? []).filter((h) => h !== timeField),
+    }),
+    assembleSpec
+  )({
+    data: transformedData,
+    styles,
+    axisConfig,
+    axisColumnMappings: axisColumnMappings ?? {},
+    timeRange,
+  });
+
+  return result.spec;
+};
+
+/**
+ * Create a category-based line chart with one metric and one category
+ */
+export const createCategoryLineChart = (
+  transformedData: Array<Record<string, any>>,
+  styles: LineChartStyle,
+  axisColumnMappings: { [AxisRole.X]: VisColumn; [AxisRole.Y]: VisColumn[] }
+): any => {
+  const axisConfig = getAxisConfig(styles);
+
+  const categoryField = axisColumnMappings[AxisRole.X].column;
+  const valueField = axisColumnMappings[AxisRole.Y].map((y) => y.column);
+  const valueFieldNames = axisColumnMappings[AxisRole.Y].map((y) => y.name) ?? [];
+
+  const allColumns = getColumnsFromAxisColumnMapping(axisColumnMappings);
+
+  const result = pipe(
+    transform(convertTo2DArray(allColumns)),
+    createBaseConfig({
+      legend: { show: false },
+    }),
+    buildAxisConfigs,
+    createLineSeries({
+      styles,
+      categoryField,
+      seriesFields: valueField,
+      addTimeMarker: false,
+    }),
+    assembleSpec
+  )({
+    data: transformedData,
+    styles,
+    axisConfig,
+    axisColumnMappings: axisColumnMappings ?? {},
+  });
+
+  return result.spec;
+};
+
+export const createCategoryMultiLineChart = (
+  transformedData: Array<Record<string, any>>,
+  styles: LineChartStyle,
+  axisColumnMappings: {
+    [AxisRole.X]: VisColumn;
+    [AxisRole.Y]: VisColumn;
+    [AxisRole.COLOR]: VisColumn;
+  }
+): any => {
+  const axisConfig = getAxisConfig(styles);
+
+  const cateField = axisColumnMappings[AxisRole.X].column;
+  const valueField = axisColumnMappings[AxisRole.Y].column;
+  const colorField = axisColumnMappings[AxisRole.COLOR].column;
+
+  const result = pipe(
+    transform(
+      pivot({
+        groupBy: cateField,
+        pivot: colorField,
+        field: valueField,
+      }),
+      flatten(),
+      convertTo2DArray()
+    ),
+    createBaseConfig({
+      legend: { show: styles.addLegend },
+    }),
+    buildAxisConfigs,
+    createLineSeries({
+      styles,
+      categoryField: cateField,
+      seriesFields: (headers) => (headers ?? []).filter((h) => h !== cateField),
+      addTimeMarker: false,
+    }),
+    assembleSpec
+  )({
+    data: transformedData,
+    styles,
+    axisConfig,
+    axisColumnMappings: axisColumnMappings ?? {},
+  });
+
+  return result.spec;
 };

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { ReactElement, useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { i18n } from '@osd/i18n';
 import { EUI_MODAL_CANCEL_BUTTON, EuiCompressedCheckboxGroup } from '@elastic/eui';
 import { EuiCheckboxGroupIdToSelectedMap } from '@elastic/eui/src/components/form/checkbox/checkbox_group';
@@ -33,6 +33,7 @@ import { DashboardContainer } from '../embeddable/dashboard_container';
 import { DashboardConstants, createDashboardEditUrl } from '../../dashboard_constants';
 import { unhashUrl } from '../../../../opensearch_dashboards_utils/public';
 import { Dashboard } from '../../dashboard';
+import { showAddPanelPopover } from '../components/dashboard_top_nav/top_nav/show_add_panel_popover';
 
 interface UrlParamsSelectedMap {
   [UrlParams.SHOW_TOP_MENU]: boolean;
@@ -166,23 +167,53 @@ export const getNavActions = (
     showCloneModal(onClone, currentTitle);
   };
 
-  navActions[TopNavIds.ADD_EXISTING] = () => {
-    if (currentContainer && !isErrorEmbeddable(currentContainer)) {
-      openAddPanelFlyout({
-        embeddable: currentContainer,
-        getAllFactories: embeddable.getEmbeddableFactories,
-        getFactory: embeddable.getEmbeddableFactory,
-        notifications,
-        overlays,
-        SavedObjectFinder: getSavedObjectFinder(
-          savedObjects,
-          uiSettings,
-          services.data,
-          services.application
-        ),
-      });
-    }
-  };
+  if (uiSettings.get('home:useNewHomePage')) {
+    navActions[TopNavIds.ADD_EXISTING] = (anchorElement) => {
+      if (currentContainer && !isErrorEmbeddable(currentContainer)) {
+        showAddPanelPopover({
+          anchorElement,
+          uiActions: services.uiActions,
+          onAddExistingPanelFlyout: () => {
+            openAddPanelFlyout({
+              embeddable: currentContainer,
+              getAllFactories: embeddable.getEmbeddableFactories,
+              getFactory: embeddable.getEmbeddableFactory,
+              notifications,
+              overlays,
+              SavedObjectFinder: getSavedObjectFinder(
+                savedObjects,
+                uiSettings,
+                services.data,
+                services.application
+              ),
+            });
+          },
+          containerInfo: {
+            containerId: currentContainer.getInput().id,
+            containerName: currentContainer.getTitle(),
+          },
+        });
+      }
+    };
+  } else {
+    navActions[TopNavIds.ADD_EXISTING] = () => {
+      if (currentContainer && !isErrorEmbeddable(currentContainer)) {
+        openAddPanelFlyout({
+          embeddable: currentContainer,
+          getAllFactories: embeddable.getEmbeddableFactories,
+          getFactory: embeddable.getEmbeddableFactory,
+          notifications,
+          overlays,
+          SavedObjectFinder: getSavedObjectFinder(
+            savedObjects,
+            uiSettings,
+            services.data,
+            services.application
+          ),
+        });
+      }
+    };
+  }
 
   navActions[TopNavIds.VISUALIZE] = async () => {
     const type = 'visualization';

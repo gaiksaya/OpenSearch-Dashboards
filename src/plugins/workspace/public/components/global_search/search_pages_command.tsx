@@ -5,7 +5,7 @@
 
 import { CoreStart } from 'opensearch-dashboards/public';
 import { first } from 'rxjs/operators';
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { BehaviorSubject } from 'rxjs';
 import { getFirstUseCaseOfFeatureConfigs } from '../../utils';
 import { DEFAULT_NAV_GROUPS, NavGroupType } from '../../../../../core/public';
@@ -48,7 +48,8 @@ export const workspaceSearchPages = async (
         const urlWithoutWorkspace = formatUrlWithWorkspaceId(
           link.href,
           '',
-          coreStart.http.basePath
+          coreStart.http.basePath,
+          true
         );
         window.location.assign(urlWithoutWorkspace);
         return;

@@ -36,11 +36,14 @@ import { FieldFormatsSetup, FieldFormatsStart } from './field_formats';
 import { createFiltersFromRangeSelectAction, createFiltersFromValueClickAction } from './actions';
 import { ISearchSetup, ISearchStart, SearchEnhancements } from './search';
 import { EditorEnhancements, QuerySetup, QueryStart } from './query';
+import { DataViewsContract } from './data_views';
 import { IndexPatternsContract } from './index_patterns';
 import { UsageCollectionSetup } from '../../usage_collection/public';
 import { DataSourceStart } from './data_sources/datasource_services/types';
 import { IUiStart } from './ui';
 import { DataStorage } from '../common';
+import { ResourceClientFactory } from './resources';
+import { ContextProviderStart } from '../../context_provider/public';
 
 export interface DataPublicPluginEnhancements {
   search?: SearchEnhancements;
@@ -54,6 +57,7 @@ export interface DataSetupDependencies {
 }
 
 export interface DataStartDependencies {
+  contextProvider?: ContextProviderStart;
   uiActions: UiActionsStart;
 }
 
@@ -65,6 +69,11 @@ export interface DataPublicPluginSetup {
   search: ISearchSetup;
   fieldFormats: FieldFormatsSetup;
   query: QuerySetup;
+  /**
+   * Factory for creating resource clients.
+   * Use register() to add new resource client types.
+   */
+  resourceClientFactory: ResourceClientFactory;
   /**
    * @experimental
    */
@@ -94,10 +103,16 @@ export interface DataPublicPluginStart {
    */
   autocomplete: AutocompleteStart;
   /**
+   * @deprecated
    * index patterns service
    * {@link IndexPatternsContract}
    */
   indexPatterns: IndexPatternsContract;
+  /**
+   * data views service
+   * {@link DataViewwsContract}
+   */
+  dataViews: DataViewsContract;
   /**
    * search service
    * {@link ISearchStart}
@@ -123,6 +138,11 @@ export interface DataPublicPluginStart {
    * {@link DataSourceStart}
    */
   dataSources: DataSourceStart;
+  /**
+   * Factory for creating resource clients.
+   * {@link ResourceClientFactory}
+   */
+  resourceClientFactory: ResourceClientFactory;
 }
 
 export interface IDataPluginServices extends Partial<CoreStart> {

@@ -8,7 +8,7 @@ import './data_table.scss';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { EuiSmallButtonEmpty, EuiCallOut, EuiProgress } from '@elastic/eui';
 import { FormattedMessage } from '@osd/i18n/react';
-import { IndexPattern } from 'src/plugins/data/public';
+import { IndexPattern, DataView as Dataset } from 'src/plugins/data/public';
 import { TableHeader } from './table_header/table_header';
 import {
   DocViewFilterFn,
@@ -23,16 +23,18 @@ export interface DataTableProps {
   columns: LegacyDisplayedColumn[];
   hits?: number;
   rows: Array<OpenSearchSearchHit<Record<string, any>>>;
-  indexPattern: IndexPattern;
+  dataset: IndexPattern | Dataset;
   sampleSize: number;
   isShortDots: boolean;
   showPagination?: boolean;
   docViewsRegistry: DocViewsRegistry;
-  onRemoveColumn: (column: string) => void;
-  onAddColumn: (column: string) => void;
+  onRemoveColumn?: (column: string) => void;
+  onAddColumn?: (column: string) => void;
   onFilter: DocViewFilterFn;
   onClose?: () => void;
   scrollToTop?: () => void;
+  expandedTableHeader?: string;
+  wrapCellText?: boolean;
 }
 
 // ToDo: These would need to be read from an upcoming config panel
@@ -45,7 +47,7 @@ const DataTableUI = ({
   columns,
   hits,
   rows,
-  indexPattern,
+  dataset,
   sampleSize,
   isShortDots,
   docViewsRegistry,
@@ -55,6 +57,8 @@ const DataTableUI = ({
   onFilter,
   onClose,
   scrollToTop,
+  expandedTableHeader,
+  wrapCellText,
 }: DataTableProps) => {
   const columnNames = columns.map((column) => column.name);
 
@@ -80,17 +84,9 @@ const DataTableUI = ({
   const observerRef = useRef<IntersectionObserver | null>(null);
   // `sentinelElement` is attached to the bottom of the table to observe when the table is scrolled all the way.
   const [sentinelElement, setSentinelElement] = useState<HTMLDivElement>();
-  // `tableElement` is used for first auto-sizing and then fixing column widths
-  const [tableElement, setTableElement] = useState<HTMLTableElement>();
-  // Both need callback refs since the elements aren't set on the first render.
   const sentinelRef = useCallback((node: HTMLDivElement | null) => {
     if (node !== null) {
       setSentinelElement(node);
-    }
-  }, []);
-  const tableRef = useCallback((el: HTMLTableElement | null) => {
-    if (el !== null) {
-      setTableElement(el);
     }
   }, []);
 
@@ -164,50 +160,6 @@ const DataTableUI = ({
     return () => cancelAnimationFrame(lazyLoadRequestFrameRef.current);
   }, [showPagination, renderedRowCount, desiredRowCount]);
 
-  // Allow auto column-sizing using the initially rendered rows and then convert to fixed
-  const tableLayoutRequestFrameRef = useRef<number>(0);
-
-  /* In asynchronous data loading, column metadata may arrive before the corresponding data, resulting in
-     layout being calculated for the new column definitions using the old data. To mitigate this issue, we
-     additionally trigger a recalculation when a change is observed in the index that the data attributes
-     itself to. This ensures a re-layout is performed when new data is loaded or the column definitions
-     change, effectively addressing the symptoms of the race condition.
-   */
-  const indexOfRenderedData = rows?.[0]?._index;
-  const timeFromFirstRow =
-    typeof indexPattern?.timeFieldName === 'string' &&
-    rows?.[0]?._source?.[indexPattern.timeFieldName];
-
-  useEffect(() => {
-    if (tableElement) {
-      // Load the first batch of rows and adjust the columns to the contents
-      tableElement.style.tableLayout = 'auto';
-      // To prevent influencing the auto-sizing, unset the widths from a previous render
-      tableElement.querySelectorAll('thead > tr > th:not(:first-child)').forEach((th) => {
-        (th as HTMLTableCellElement).style.width = 'unset';
-      });
-
-      tableLayoutRequestFrameRef.current = requestAnimationFrame(() => {
-        if (tableElement) {
-          /* Get the widths for each header cell which is the column's width automatically adjusted to the content of
-           * the column. Apply the width as a style and change the layout to fixed. This is to
-           *   1) prevent columns from changing size when more rows are added, and
-           *   2) speed of rendering time of subsequently added rows.
-           *
-           * First cell is skipped because it has a fixed dimension set already.
-           */
-          tableElement.querySelectorAll('thead > tr > th:not(:first-child)').forEach((th) => {
-            (th as HTMLTableCellElement).style.width = th.getBoundingClientRect().width + 'px';
-          });
-
-          tableElement.style.tableLayout = 'fixed';
-        }
-      });
-    }
-
-    return () => cancelAnimationFrame(tableLayoutRequestFrameRef.current);
-  }, [columns, tableElement, indexOfRenderedData, timeFromFirstRow]);
-
   return (
     <div className="explore-table-container">
       {showPagination ? (
@@ -221,7 +173,10 @@ const DataTableUI = ({
           sampleSize={sampleSize}
         />
       ) : null}
-      <table data-test-subj="docTable" className="explore-table table" ref={tableRef}>
+      <table
+        data-test-subj="docTable"
+        className={`explore-table table${wrapCellText ? ' explore-table--wrap' : ''}`}
+      >
         <thead>
           <TableHeader displayedColumns={columns} onRemoveColumn={onRemoveColumn} />
         </thead>
@@ -230,16 +185,19 @@ const DataTableUI = ({
             (row, index: number) => {
               return (
                 <TableRow
-                  key={row._id}
+                  key={row._id ?? `row-${index}`}
                   row={row}
+                  index={index}
                   columns={columnNames}
-                  indexPattern={indexPattern}
+                  dataset={dataset}
                   onAddColumn={onAddColumn}
                   onRemoveColumn={onRemoveColumn}
                   onFilter={onFilter}
                   onClose={onClose}
                   isShortDots={isShortDots}
                   docViewsRegistry={docViewsRegistry}
+                  expandedTableHeader={expandedTableHeader}
+                  wrapCellText={wrapCellText}
                 />
               );
             }

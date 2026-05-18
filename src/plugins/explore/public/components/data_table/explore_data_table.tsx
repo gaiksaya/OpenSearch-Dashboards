@@ -3,151 +3,125 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useCallback, useMemo } from 'react';
-import {
-  DEFAULT_COLUMNS_SETTING,
-  DOC_HIDE_TIME_COLUMN_SETTING,
-  MODIFY_COLUMNS_ON_SWITCH,
-  SAMPLE_SIZE_SETTING,
-} from '../../../common';
+import './explore_data_table.scss';
+
+import { i18n } from '@osd/i18n';
+import { useCallback, useMemo, useRef, memo } from 'react';
+import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { useDispatch, useSelector } from 'react-redux';
+import { ExploreFlavor, SAMPLE_SIZE_SETTING } from '../../../common';
 import { useOpenSearchDashboards } from '../../../../opensearch_dashboards_react/public';
-import { IndexPatternField, opensearchFilters, UI_SETTINGS } from '../../../../data/public';
-import { DocViewFilterFn, OpenSearchSearchHit } from '../../types/doc_views_types';
+import { UI_SETTINGS } from '../../../../data/public';
+import { DocViewFilterFn } from '../../types/doc_views_types';
 import { DataTable } from './data_table';
-import {
-  addColumn,
-  removeColumn,
-  useDispatch,
-  useSelector,
-} from '../../application/legacy/discover/application/utils/state_management';
-import { DiscoverViewServices } from '../../application/legacy/discover/build_services';
-import { useDiscoverContext } from '../../application/legacy/discover/application/view_components/context';
-import { popularizeField } from '../../application/legacy/discover/application/helpers/popularize_field';
-import { buildColumns } from '../../application/legacy/discover/application/utils/columns';
-import { filterColumns } from '../../application/legacy/discover/application/view_components/utils/filter_columns';
-import { getLegacyDisplayedColumns } from '../../helpers/data_table_helper';
 import { getDocViewsRegistry } from '../../application/legacy/discover/opensearch_dashboards_services';
+import { ExploreServices } from '../../types';
+import {
+  selectSavedSearch,
+  selectWrapCellText,
+} from '../../application/utils/state_management/selectors';
+import { RootState } from '../../application/utils/state_management/store';
+import { defaultPrepareQueryString } from '../../application/utils/state_management/actions/query_actions';
+import { resultsCache } from '../../application/utils/state_management/slices';
+import { useChangeQueryEditor } from '../../application/hooks';
+import { useDatasetContext } from '../../application/context';
+import { addColumn, removeColumn } from '../../application/utils/state_management/slices';
+import { useFlavorId } from '../../helpers/use_flavor_id';
+import { useDisplayedColumns } from '../../helpers/use_displayed_columns';
 
-interface Props {
-  rows?: Array<OpenSearchSearchHit<Record<string, any>>>;
-  scrollToTop?: () => void;
-}
+const ExploreDataTableComponent = () => {
+  const { services } = useOpenSearchDashboards<ExploreServices>();
+  const { uiSettings } = services;
 
-export const ExploreDataTable = ({ rows, scrollToTop }: Props) => {
-  const { services } = useOpenSearchDashboards<DiscoverViewServices>();
-  const {
-    uiSettings,
-    data: {
-      query: { filterManager },
-    },
-    capabilities,
-    indexPatterns,
-  } = services;
+  const { onAddFilter } = useChangeQueryEditor();
+  const savedSearch = useSelector(selectSavedSearch);
+  const wrapCellText = useSelector(selectWrapCellText);
+  const { dataset } = useDatasetContext();
 
-  const { indexPattern, savedSearch } = useDiscoverContext();
+  // Get rows for the DataTable (hook handles column processing)
+  const query = useSelector((state: RootState) => state.query);
+  const cacheKey = useMemo(() => defaultPrepareQueryString(query), [query]);
+  // metadata subscribes to Redux for reactivity; full hits are read from resultsCache.
+  // The cache is guaranteed to be populated before this selector fires (see store.ts middleware).
+  const metadata = useSelector((state: RootState) => state.results[cacheKey]);
+  const rawResults = metadata ? resultsCache.get(cacheKey) ?? null : null;
+  const rows = rawResults?.hits?.hits || [];
 
-  const { columns } = useSelector((state) => {
-    const stateColumns = state.logs?.columns;
-    // check if state columns is not undefined, otherwise use buildColumns
-    return {
-      columns: stateColumns !== undefined ? stateColumns : buildColumns([]),
-    };
-  });
-
-  const tableColumns = useMemo(() => {
-    if (indexPattern == null) {
-      return [];
+  const flavorId = useFlavorId();
+  const expandedTableHeader = useMemo(() => {
+    if (flavorId === ExploreFlavor.Traces) {
+      return i18n.translate('explore.dataTable.expandedRow.spanHeading', {
+        defaultMessage: 'Expanded span',
+      });
     }
+    return i18n.translate('explore.dataTable.expandedRow.documentHeading', {
+      defaultMessage: 'Expanded document',
+    });
+  }, [flavorId]);
 
-    const filteredColumns = filterColumns(
-      columns,
-      indexPattern,
-      uiSettings.get(DEFAULT_COLUMNS_SETTING),
-      uiSettings.get(MODIFY_COLUMNS_ON_SWITCH)
-    );
+  // Use shared hook to ensure DataTable columns match CSV export columns
+  const tableColumns = useDisplayedColumns({ includeFieldCounts: true });
 
-    let adjustedColumns = buildColumns(filteredColumns);
-    // Handle the case where all fields/columns are removed except the time-field one
-    if (adjustedColumns.length === 1 && adjustedColumns[0] === indexPattern.timeFieldName) {
-      adjustedColumns = [...adjustedColumns, '_source'];
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = useCallback(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
     }
+  }, []);
 
-    const displayedColumns = getLegacyDisplayedColumns(
-      adjustedColumns,
-      indexPattern,
-      uiSettings.get(UI_SETTINGS.SHORT_DOTS_ENABLE),
-      uiSettings.get(DOC_HIDE_TIME_COLUMN_SETTING)
-    );
-
-    return displayedColumns;
-  }, [columns, indexPattern, uiSettings]);
-
-  const docViewsRegistry = getDocViewsRegistry();
+  const docViewsRegistry = useMemo(() => getDocViewsRegistry(), []);
 
   const dispatch = useDispatch();
-  const onAddColumn = (col: string) => {
-    if (indexPattern && capabilities.discover?.save) {
-      popularizeField(indexPattern, col, indexPatterns);
-    }
-
-    dispatch(addColumn({ column: col }));
-  };
-  const onRemoveColumn = (col: string) => {
-    if (indexPattern && capabilities.discover?.save) {
-      popularizeField(indexPattern, col, indexPatterns);
-    }
-
-    dispatch(removeColumn(col));
-  };
-
-  const onAddFilter = useCallback(
-    (field: string | IndexPatternField, values: string, operation: '+' | '-') => {
-      if (!indexPattern) return;
-
-      const newFilters = opensearchFilters.generateFilters(
-        filterManager,
-        field,
-        values,
-        operation,
-        indexPattern.id ?? ''
-      );
-      return filterManager.addFilters(newFilters);
+  const onAddColumn = useCallback(
+    (col: string) => {
+      dispatch(addColumn({ column: col }));
     },
-    [filterManager, indexPattern]
+    [dispatch]
   );
 
-  if (indexPattern === undefined) {
-    // TODO: handle better
-    return null;
-  }
-
-  if (!rows || rows.length === 0) {
-    // TODO: handle better
-    return <div>{'loading...'}</div>;
-  }
+  const onRemoveColumn = useCallback(
+    (col: string) => {
+      dispatch(removeColumn(col));
+    },
+    [dispatch]
+  );
 
   return (
     <div
       data-render-complete={true}
       data-shared-item=""
-      data-title={savedSearch?.id ? savedSearch.title : ''}
-      data-description={savedSearch?.id ? savedSearch.description : ''}
+      data-title={savedSearch || ''}
+      data-description={savedSearch || ''}
       data-test-subj="discoverTable"
-      className="eui-xScrollWithShadows"
-      style={{ height: '100%' }}
+      className="explore-table-container eui-xScrollWithShadows"
+      ref={containerRef}
     >
-      <DataTable
-        columns={tableColumns}
-        indexPattern={indexPattern}
-        rows={rows}
-        docViewsRegistry={docViewsRegistry}
-        sampleSize={uiSettings.get(SAMPLE_SIZE_SETTING)}
-        isShortDots={uiSettings.get(UI_SETTINGS.SHORT_DOTS_ENABLE)}
-        onAddColumn={onAddColumn}
-        onFilter={onAddFilter as DocViewFilterFn}
-        onRemoveColumn={onRemoveColumn}
-        scrollToTop={scrollToTop}
-      />
+      <EuiFlexGroup
+        direction="column"
+        gutterSize="xs"
+        justifyContent="center"
+        className="explore-table-flex-group"
+      >
+        <EuiFlexItem grow={true}>
+          <DataTable
+            columns={tableColumns}
+            dataset={dataset!}
+            rows={rows}
+            docViewsRegistry={docViewsRegistry}
+            sampleSize={uiSettings.get(SAMPLE_SIZE_SETTING)}
+            isShortDots={uiSettings.get(UI_SETTINGS.SHORT_DOTS_ENABLE)}
+            onFilter={onAddFilter as DocViewFilterFn}
+            scrollToTop={scrollToTop}
+            onAddColumn={onAddColumn}
+            onRemoveColumn={onRemoveColumn}
+            expandedTableHeader={expandedTableHeader}
+            wrapCellText={wrapCellText}
+          />
+        </EuiFlexItem>
+      </EuiFlexGroup>
     </div>
   );
 };
+
+export const ExploreDataTable = memo(ExploreDataTableComponent);
